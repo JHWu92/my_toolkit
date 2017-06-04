@@ -272,7 +272,7 @@ def grid_cv_models(x, y, models, params, order=None, path='',
     return df_cv
 
 
-def model_order_for_grid(speed=2):
+def model_order_by_speed(speed=2):
     """ 3 level of speed:
     0: fast
     1: fast+medium
@@ -292,8 +292,9 @@ def model_order_for_grid(speed=2):
 
 
 # ################################################
-# Evaluation
+# Evaluation by metrics
 # Evaluators for different prediction tasks
+# Visualization cross validation result
 # ################################################
 
 def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path='', cv=5, save_res=True):
@@ -359,31 +360,6 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     return result
 
 
-def confusion_matrix_as_df(fitted_model, x, y, labels=None):
-    """
-    build a confusion matrix between y and fitted_model.predict(x)
-
-    parameters:
-        fitted_model: model from sklearn. It should already perform fit(train_x, train_y)
-        x,y: features and true labels
-        labels: index and column names of the return pd.df. If None, pd.unique(y) will be used
-
-    return：
-        confusion matrix in the form of pd.Dataframe
-    """
-
-    pred_y = fitted_model.predict(x)
-    if labels is None:
-        labels = pd.unique(y)
-    cfsn = confusion_matrix(y, pred_y, labels=labels)
-    return pd.DataFrame(cfsn, columns=labels, index=labels)
-
-
-# ################################################
-# Analysis of predictor
-# Visualization cross validation result
-# ################################################
-
 def vis_evaluation(path, cv):
     df_eval = pd.read_csv(os.path.join(path, 'cv_%d_best_models_evaluation.csv' % cv))
     return df_eval.plot()
@@ -394,7 +370,12 @@ def vis_grid_cv_one_model(fn):
     return df[['mean_test_score', 'mean_train_score']].boxplot()
 
 
-def show_important_features(tree_model, name="", top=None, labels=None, show_plt=True, set_std=True):
+# ################################################
+# Analysis of predictor
+# model inspection
+# ################################################
+
+def show_important_features(fitted_tree_model, name="", top=None, labels=None, show_plt=True, set_std=True):
     """
     Format tree_models feature importance as pd.df, along with a bar plot with error bar.
 
@@ -402,18 +383,18 @@ def show_important_features(tree_model, name="", top=None, labels=None, show_plt
         the shape of estimators of gradient boosting is [n_estimator, n_classes(binary=1)].
         not sure the difference per row. Right now just flatten all estimators to calculate std.
 
-    :param tree_model: tree like model, mostly models in sklearn.ensemble.
+    :param fitted_tree_model: tree like model, mostly models in sklearn.ensemble.
     :param name: name to be shown in plot title
     :param top: show top most important features. Default None, showing all features
     :param labels: labels for features. Default None, range(len(tree_model.feature_importances_))
     :param show_plt: Default True, visualize importance and std as error bar with maplotlib.pyplot.
     :return: pd.df, columns = importance, label, std
     """
-    importances = tree_model.feature_importances_
+    importances = fitted_tree_model.feature_importances_
     feature_size = len(importances)
-    if hasattr(tree_model, 'estimators_') and set_std:
+    if hasattr(fitted_tree_model, 'estimators_') and set_std:
         # TODO: is it reasonable to flatten gradient boosting's estimators?
-        estimators = tree_model.estimators_
+        estimators = fitted_tree_model.estimators_
         if hasattr(estimators, 'flatten'):
             estimators = estimators.flatten()
         std = np.std([tree.feature_importances_ for tree in estimators], axis=0)
@@ -434,3 +415,49 @@ def show_important_features(tree_model, name="", top=None, labels=None, show_plt
         imp_plt.importance.plot(kind='barh', xerr=imp_plt['std'], title=title, figsize=(10, 7))
 
     return imp
+
+
+def confusion_matrix_as_df(fitted_model, x, y, labels=None):
+    """
+    build a confusion matrix between y and fitted_model.predict(x)
+
+    parameters:
+        fitted_model: model from sklearn. It should already perform fit(train_x, train_y)
+        x,y: features and true labels
+        labels: index and column names of the return pd.df. If None, pd.unique(y) will be used
+
+    return：
+        confusion matrix in the form of pd.Dataframe
+    """
+
+    pred_y = fitted_model.predict(x)
+    if labels is None:
+        labels = pd.unique(y)
+    cfsn = confusion_matrix(y, pred_y, labels=labels)
+    return pd.DataFrame(cfsn, columns=labels, index=labels)
+
+
+def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp, scalable=True):
+    """
+    get indices by pairs of true and predicted label
+    :param fitted_model: model from sklearn. It should already perform fit(train_x, train_y)
+    :param test_x: features of test set
+    :param test_y: true labels of test set
+    :param target_tp: true vs pred pairs to compare. [(t,p), (t,p), ...]
+    :param scalable: whether classification labels are scalable
+    :return: {(t,p): indices, }
+    """
+
+    pred_y = fitted_model.predict(test_x)
+
+    if scalable:
+        min_y, max_y = test_y.min(), test_y.max()
+        pred_y = bounded_round(pred_y, min_y, max_y)
+
+    df = pd.DataFrame(zip(test_y, pred_y), columns=['true', 'pred'])
+
+    target_xs = {}
+    for t, p in target_tp:
+        target_xs[(t, p)] = df[(df.true == t) & (df.pred == p)].index.tolist()
+
+    return target_xs
