@@ -140,3 +140,6 @@ $RECYCLE.BIN/
 
 # pycharm
 .idea
+
+# customize
+data/for_test
