@@ -93,6 +93,9 @@ def grid_cv_default_params():
     params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
     params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
 
+    params_mlp = {'hidden_layer_sizes': [(100,), (5, 2), (20, 5), (100, 20), (100, 20, 5)],
+                  'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]}
+
     # SVM/SVR is way too slow
     c_s = np.logspace(-4, 2, 3)
     gamma_s = [1e-5, 1e-3, 1e-1]
@@ -119,13 +122,13 @@ def grid_cv_default_params():
         'ADAreg'   : params_ada,
         'BAGreg'   : params_bag,
         'GDBreg'   : params_gdb,
+        'MLPreg'   : params_mlp,
         'SVR'      : params_svr,
         'linearSVR': {'C': c_s, 'loss': ['epsilon_insensitive', 'squared_epsilon_insensitive'], 'epsilon': [0, 0.1, 1]},
-        'MLPreg'   : {'hidden_layer_sizes': [(5, 2), (20, 5), (100, 20), (100, 20, 5)],
-                      'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]},
     }
 
     params_cls = {
+        'GNBcls'   : {},
         'logistics': {'C': np.logspace(-4, 2, 4), 'penalty': ['l1', 'l2']},
         'DTcls'    : {'max_depth': [3, 5, 10, 30, 50], 'max_features': [0.1, 0.3, 0.5, 1.],
                       'criterion': ['gini', 'entropy']},
@@ -134,10 +137,8 @@ def grid_cv_default_params():
         'BAGcls'   : params_bag,
         'GDBcls'   : params_gdb,
         'SVM'      : params_svm,
+        'MLPcls'   : params_mlp,
         'linearSVM': {'C': c_s, 'loss': ['hinge', 'squared_hinge']},
-        'MLPcls'   : {'hidden_layer_sizes': [(5, 2), (20, 5), (100, 20), (100, 20, 5)],
-                      'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]},
-        'GNBcls'   : {},
     }
 
     return {'cls': params_cls, 'reg': params_reg}
@@ -203,12 +204,13 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     return result
 
 
-def grid_cv_models(x, y, models, params, path='', n_jobs=4, cv=5, save_res=True, redo=False, verbose=False,
-                   fit_when_load=True):
+def grid_cv_models(x, y, models, params, order=None, path='',
+                   n_jobs=4, cv=5, save_res=True, redo=False, verbose=False, fit_when_load=True):
     """
     regression model is evaluated by neg_mean_squared_error
     classification model is evaluated by f1_weighted
-    iterate over models' keys, get tuning parameters based on key, if no matched paramters, that model will be skipped
+    if order is None, iterate over models' keys, otherwise iterate by order
+    get tuning parameters based on key, if no matched paramters, that model will be skipped
     if not redo and the result exists, optimum parameters will be loaded using model.set_params(**loaded)
     when loading model, run empty model.fit(x,y) if fit_when_load=True
     :return:
@@ -238,16 +240,23 @@ def grid_cv_models(x, y, models, params, path='', n_jobs=4, cv=5, save_res=True,
     # redo or result not exists
     cv_results = []
     start = dtm.now()
-    for kind in ['reg', 'cls']:
+    if order is None:
+        order = [[kind, kind_models.keys()] for kind, kind_models in models.items()]
+
+    for kind, kind_model_names in order:
         if kind not in models:
+            print kind, 'not in models'
             continue
-        for name, model in models[kind].items():
+        for name in kind_model_names:
+            if name not in models[kind]:
+                print 'kind={} mode={} not in models, skipped'.format(kind, name)
+                continue
             if name not in params[kind]:
                 print 'model', name, 'doesnt have tuning params, use {} instead'
                 param = {}
             else:
                 param = params[kind][name]
-
+            model = models[kind][name]
             result = grid_cv_a_model(x, y, model, param, kind, name,
                                      path=path, n_jobs=n_jobs, cv=cv, verbose=verbose, redo=redo, save_res=save_res,
                                      fit_when_load=fit_when_load)
@@ -261,6 +270,25 @@ def grid_cv_models(x, y, models, params, path='', n_jobs=4, cv=5, save_res=True,
         df_cv.to_csv(path_cv_best)
 
     return df_cv
+
+
+def model_order_for_grid(speed=2):
+    """ 3 level of speed:
+    0: fast
+    1: fast+medium
+    2: fast+medium+slow(default)
+    """
+    # grid cv on: 10k * 800
+    fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR', 'MLPreg']],
+            ['cls', ['GNBcls', 'logistics', 'DTcls', 'linearSVM', 'MLPcls']]]  # less than 5 min
+    medium = [['reg', ['ADAreg', 'RFreg', 'BAGreg']],
+              ['cls', ['ADAcls', 'RFcls', 'BAGcls']]]  # 20 min ~ 1h
+    slow = [['reg', ['SVR', 'GDBreg']], ['cls', ['SVM', 'GDBcls']]]  # 2h~8h
+    if speed == 0:
+        return fast
+    if speed == 1:
+        return fast + medium
+    return fast + medium + slow
 
 
 # ################################################
