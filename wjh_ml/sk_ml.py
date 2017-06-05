@@ -1,13 +1,14 @@
 # coding=utf-8
 from datetime import datetime as dtm
 import os
-
+import warnings
 from sklearn import linear_model, svm, tree, ensemble, neural_network, naive_bayes
 from sklearn.metrics import mean_squared_error, f1_score, accuracy_score, confusion_matrix
 from sklearn.model_selection import GridSearchCV
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from wjh_other.check_type import all_int_able, check_type
 
 
 def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
@@ -445,22 +446,23 @@ def confusion_matrix_as_df(fitted_model, x, y, labels=None, normalize=False, sho
     return df
 
 
-def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp, scalable=True):
+def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp):
     """
-    get indices by pairs of true and predicted label
+    get indices by pairs of true and predicted label. Works for classification.
     :param fitted_model: model from sklearn. It should already perform fit(train_x, train_y)
     :param test_x: features of test set
     :param test_y: true labels of test set
     :param target_tp: true vs pred pairs to compare. [(t,p), (t,p), ...]
-    :param scalable: whether classification labels are scalable
     :return: {(t,p): indices, }
     """
 
     pred_y = fitted_model.predict(test_x)
 
-    if scalable:
+    if check_type(test_y, int):
         min_y, max_y = test_y.min(), test_y.max()
         pred_y = bounded_round(pred_y, min_y, max_y)
+    elif all_int_able(test_y):
+        warnings.warn('test y is intable, but type of elements are not all int')
 
     df = pd.DataFrame(zip(test_y, pred_y), columns=['true', 'pred'])
 
@@ -469,3 +471,49 @@ def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp, scalable=True)
         target_xs[(t, p)] = df[(df.true == t) & (df.pred == p)].index.tolist()
 
     return target_xs
+
+
+def significant_level(p):
+    if p <= 0.001:
+        return '***'
+    if p <= 0.01:
+        return '**'
+    if p <= 0.05:
+        return '*'
+    return '-'
+
+
+def ftr_diff_stat_test(fitted_model, test_x, test_y, target_tp):
+    """
+    group test set by (true, pred) pairs, perform statistical test on each feature to find feature differences
+    tests include: one way ANOVA, Kruskal-Wallis H-test
+
+    :param fitted_model: model from sklearn. It should already perform fit(train_x, train_y)
+    :param test_x: features of test set
+    :param test_y: true labels of test set
+    :param target_tp: true vs pred pairs to compare. [(t,p), (t,p), ...]
+    :return: pd.Dataframe, sort by kruskal p value
+    """
+    from scipy import stats
+    idx = get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp)
+    groups = []
+    num_ftrs = test_x.shape[1]
+    for tp in target_tp:
+        groups.append(test_x.values[idx[tp]])
+
+    test_res = []
+    for i in range(num_ftrs):
+        var = test_x.columns[i]
+        test = [g[:, i] for g in groups]
+        f_one = stats.f_oneway(*test)
+        kru = stats.kruskal(*test)
+        test_res.append(
+            {'var_name'   : var,
+             'anova1way_p': f_one.pvalue, 'anova1way_stat': f_one.statistic,
+             'kruskal_p'  : kru.pvalue, 'kruskal_stat': kru.statistic,
+             })
+    df = pd.DataFrame(test_res).set_index("var_name")
+    df['annova1way_siglv'] = df.anova1way_p.apply(significant_level)
+    df['kruskal_signlv'] = df.kruskal_p.apply(significant_level)
+    df.sort_values('kruskal_p', inplace=True)
+    return df
