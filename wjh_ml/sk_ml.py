@@ -417,7 +417,7 @@ def show_important_features(fitted_tree_model, name="", top=None, labels=None, s
     return imp
 
 
-def confusion_matrix_as_df(fitted_model, x, y, labels=None):
+def confusion_matrix_as_df(fitted_model, x, y, labels=None, normalize=False, show_plt=False):
     """
     build a confusion matrix between y and fitted_model.predict(x)
 
@@ -434,7 +434,15 @@ def confusion_matrix_as_df(fitted_model, x, y, labels=None):
     if labels is None:
         labels = pd.unique(y)
     cfsn = confusion_matrix(y, pred_y, labels=labels)
-    return pd.DataFrame(cfsn, columns=labels, index=labels)
+    if normalize:
+        cfsn = cfsn.astype('float') / cfsn.sum(axis=1)[:, np.newaxis]
+    df = pd.DataFrame(cfsn)
+    df.columns = pd.MultiIndex.from_product([['pred'], labels])
+    df.index = pd.MultiIndex.from_product([['true'], labels])
+    if show_plt:
+        import seaborn
+        seaborn.heatmap(df)
+    return df
 
 
 def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp, scalable=True):
