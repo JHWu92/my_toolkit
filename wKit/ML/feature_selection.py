@@ -1,7 +1,8 @@
 # coding=utf-8
+import numpy as np
 from dprep import discretize_features
 from skfeature.function.information_theoretical_based import MRMR
-from sklearn.feature_selection import RFECV
+from sklearn.feature_selection import RFECV, VarianceThreshold
 from sklearn.linear_model import LinearRegression, RandomizedLasso, RandomizedLogisticRegression
 from sklearn.svm import LinearSVC
 
@@ -24,12 +25,51 @@ def main(x, y, name, **kwargs):
         regression: stability_lasso, rfecv_linreg
     Return array of boolean, True means important.
     """
-    return globals()[name](x, y, **kwargs)
+    return globals()[name](x=x, y=y, **kwargs)
+
+
+def select_by_has_value(x, **kwargs):
+    """
+    unsupervised feature selection. Keep features whose percentage of non-NA is larger than thres.
+    I.e. thres = 0 means keeping features of which at least one sample has value
+
+    Parameters
+    ----------
+    x: np 2d array
+    thres: has value threshold. Default 0.1.
+    
+    Return
+    ----------
+    array of boolean, True means important.
+    """
+    thres = kwargs.get('thres', 0.1)
+    has_value_percentage = (~np.isnan(x)).mean(axis=0)
+    return has_value_percentage > thres
+
+
+def select_by_var(x, **kwargs):
+    """
+    unsupervised feature selection. Keep features with variance larger than thres.
+    Parameters
+    ----------
+    x: np 2d array
+    thres: variance threshold. Default 0.0, i.e. remove features with the same value for all samples.
+
+    Return
+    ----------
+    array of boolean, True means important.
+    """
+
+    thres = kwargs.get('thres', 0.0)
+    selector = VarianceThreshold(threshold=thres)
+    selector.fit(x)
+    return selector.get_support()
 
 
 def stability_lasso(x, y, **kwargs):
     """
     Stability selection for regression problem with randomized lasso.
+    :param: x: np 2d array
     :param: param for RandomizedLasso. If provided, RandomizedLasso.set_param(param)
     :return: array of boolean, True means important.
     """
@@ -43,6 +83,7 @@ def stability_lasso(x, y, **kwargs):
 def stability_logistic(x, y, **kwargs):
     """
     Stability selection for binary or multi classification problem with randomized logistic regression.
+    :param: x: np 2d array
     :param: param for RandomizedLogisticRegression. If provided, RandomizedLogisticRegression.set_param(param)
     :return: array of boolean, True means important.
     """
@@ -59,6 +100,7 @@ def rfecv_linreg(x, y, **kwargs):
     Optimum number of features is decided through cv.
     Parameters
     ----------
+    x: np 2d array
     cv: k-fold cross validation, default 5
     n_jobs: parallel cpu threads, default 4
 
@@ -80,6 +122,7 @@ def rfecv_linsvc(x, y, **kwargs):
     Optimum number of features is decided through cv.
     Parameters
     ----------
+    x: np 2d array
     cv: k-fold cross validation, default 5
     n_jobs: parallel cpu threads, default 4
     param: for linear svc. If provided, linear SVC set param(param)
@@ -101,9 +144,9 @@ def rfecv_linsvc(x, y, **kwargs):
 def mrmr(x, y):
     """
     mRMR for classification. Features are processed by dpred.discretize_features.
+    :param: x: np 2d array
     :return: array of boolean, True means important
     """
-    import numpy as np
     n_features = x.shape[1]
     discrete_x = discretize_features(x)
     rank = MRMR.mrmr(discrete_x, y)
