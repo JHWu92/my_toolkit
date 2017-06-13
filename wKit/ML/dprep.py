@@ -1,5 +1,7 @@
 # coding=utf-8
 import numpy as np
+import pandas as pd
+from wKit.ML.stat import infer_dtype_stat
 
 
 def discretize(measurement, how='std', alpha=(0, 0.5, 1, 2), nbins=10, retn_bins=False):
@@ -37,4 +39,48 @@ def discretize(measurement, how='std', alpha=(0, 0.5, 1, 2), nbins=10, retn_bins
     if retn_bins:
         return dmeasure, bins
     else:
-        return  dmeasure
+        return dmeasure
+
+
+def discretize_features(arr2d, how='std', alpha=(0, 0.5, 1, 2), nbins=10):
+    """
+    discretize features, by arr2d's columns.
+    If a feature is inferred to possibly be nominal, it won't go through discretize()
+
+    Parameters
+    ----------
+    arr2d: 2d-array-like, (n_samples, n_features)
+    how: {'std', 'bin'}, default std
+    alpha: array-like, non-nagtive only, default (0, 0.5, 1, 2)
+        used when how='std', discretize data by standard deviation: mean+/-alpha*std (alpha=1 or 0 or 2 or 0.5)
+    nbins: int, default 10.
+        used when how='bin', discretize data by equidistance bins in [min, max].
+    """
+
+    # TODO: add parameter: dtypes, list or dict. User can specify dtypes instead of inferring.
+
+    idx = None
+    if isinstance(arr2d, pd.DataFrame):
+        idx = arr2d.index
+        col = arr2d.columns
+        arr2d = arr2d.values
+
+    _, n_features = arr2d.shape
+
+    discrete = []
+    for i in range(n_features):
+        arr = arr2d[:, i].copy()
+        infer, _ = infer_dtype_stat(arr)
+        print i, infer
+        print arr.dtype
+        if 'nominal' not in infer:
+            arr = [float(x) for x in arr]
+            discrete.append(discretize(arr, how=how, alpha=alpha, nbins=nbins))
+        else:
+            discrete.append(arr)
+
+    darr2d = np.array(discrete).T
+
+    if idx is not None:
+        darr2d = pd.DataFrame(darr2d, index=idx, columns=col)
+    return darr2d
