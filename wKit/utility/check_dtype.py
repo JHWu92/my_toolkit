@@ -28,9 +28,12 @@ def pcnt_digit_able(alist):
 
 
 def int_able(x):
-    """True if x is int, not float, or str who can be cast as int by int(x) or locale.atoi(x)"""
+    """True if x
+        1. is float but float.is_integer()==True,
+        2. can be cast as int by int(x) or locale.atoi(x)
+    """
     if isinstance(x, float):
-        return False
+        return x.is_integer()
     try:
         int(x)
         return True
