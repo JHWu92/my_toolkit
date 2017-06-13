@@ -19,6 +19,9 @@ def help():
 def main(x, y, name, **kwargs):
     """
     API for feature selection. Choose fucntion by name
+    :param: name choices:
+        classification: stability_logistic, rfecv_linsvc, mrmr
+        regression: stability_lasso, rfecv_linreg
     Return array of boolean, True means important.
     """
     return globals()[name](x, y, **kwargs)
