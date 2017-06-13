@@ -71,8 +71,6 @@ def discretize_features(arr2d, how='std', alpha=(0, 0.5, 1, 2), nbins=10):
     for i in range(n_features):
         arr = arr2d[:, i].copy()
         infer, _ = infer_dtype_stat(arr)
-        print i, infer
-        print arr.dtype
         if 'nominal' not in infer:
             arr = [float(x) for x in arr]
             discrete.append(discretize(arr, how=how, alpha=alpha, nbins=nbins))
