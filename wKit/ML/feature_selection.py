@@ -5,8 +5,8 @@ from skfeature.function.information_theoretical_based import MRMR
 from sklearn.feature_selection import RFECV, VarianceThreshold
 from sklearn.linear_model import LinearRegression, RandomizedLasso, RandomizedLogisticRegression
 from sklearn.svm import LinearSVC
-
-
+import pandas as pd
+import datetime
 def help():
     import types
     for name, obj in globals().items():
@@ -17,18 +17,34 @@ def help():
             print obj.__doc__
 
 
-def main(x, y, name, **kwargs):
+def fselect(x, y, name, **kwargs):
     """
     API for feature selection. Choose fucntion by name
     :param: name choices:
         classification: stability_logistic, rfecv_linsvc, mrmr
         regression: stability_lasso, rfecv_linreg
+        unsupervised: has_value_thres, var_thres
+    :param kwargs:
+        random_state: for train_test_split, default 0
+        cv: k-fold cv, for rfecv_* feature selection
+        n_jobs: num of threads for rfecv_* feature selection
+        param: param for some feature selection model. rfecv_*, stability_*
+        thres: for thres based selection: has_value_thres, var_thres
+        verbose: True to print timestamp, default False
+    :param kwargs
+
     Return array of boolean, True means important.
     """
+    if isinstance(x, pd.DataFrame):
+        x = x.values
+    if isinstance(y, pd.Series):
+        y = y.values
+    if kwargs.get('verbose', False):
+        print datetime.datetime.now(), 'feature selection with', name
     return globals()[name](x=x, y=y, **kwargs)
 
 
-def select_by_has_value(x, **kwargs):
+def has_value_thres(x, **kwargs):
     """
     unsupervised feature selection. Keep features whose percentage of non-NA is larger than thres.
     I.e. thres = 0 means keeping features of which at least one sample has value
@@ -37,7 +53,7 @@ def select_by_has_value(x, **kwargs):
     ----------
     x: np 2d array
     thres: has value threshold. Default 0.1.
-    
+
     Return
     ----------
     array of boolean, True means important.
@@ -47,7 +63,7 @@ def select_by_has_value(x, **kwargs):
     return has_value_percentage > thres
 
 
-def select_by_var(x, **kwargs):
+def var_thres(x, **kwargs):
     """
     unsupervised feature selection. Keep features with variance larger than thres.
     Parameters
@@ -141,7 +157,7 @@ def rfecv_linsvc(x, y, **kwargs):
     return rfe.support_
 
 
-def mrmr(x, y):
+def mrmr(x, y, **kwargs):
     """
     mRMR for classification. Features are processed by dpred.discretize_features.
     :param: x: np 2d array
