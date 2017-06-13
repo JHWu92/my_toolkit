@@ -1,7 +1,7 @@
 # coding=utf-8
 import locale
 locale.setlocale(locale.LC_ALL, 'english_USA')
-
+import numpy as np
 
 def check_type(a_list, types):
     """
@@ -15,6 +15,16 @@ def check_type(a_list, types):
 def all_int_able(alist):
     """True if all elements can be cast as int by int(x) or locale.atoi(x)"""
     return all(int_able(x) for x in alist)
+
+
+def all_digit_able(alist):
+    """True if all elements can be cast as int by int(x) or locale.atoi(x)"""
+    return all(digit_able(x) for x in alist)
+
+
+def pcnt_digit_able(alist):
+    """percentage of digitable elements"""
+    return np.mean([digit_able(x) for x in alist])
 
 
 def int_able(x):
