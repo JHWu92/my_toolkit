@@ -43,7 +43,6 @@ def infer_dtype_stat(arr, tsv=False):
     infer = []
     size = len(arr)
 
-    all_int = check_dtype.check_type(arr, int)
     all_digit = check_dtype.check_type(arr, (int, float, long))
     all_str = check_dtype.check_type(arr, str)
     all_digitable = check_dtype.all_digit_able(arr)
@@ -52,7 +51,7 @@ def infer_dtype_stat(arr, tsv=False):
     if all_intable:
         # intable -> discrete
         infer.append('discrete_measurement')
-        if all_int:
+        if all_digit:
             remarks.append('ints')
         elif all_str:
             remarks.append('ints as str')
@@ -66,9 +65,13 @@ def infer_dtype_stat(arr, tsv=False):
             infer.append('ordinal')
         nunique = len(np.unique(arr))
         if nunique <= 3:
-            # nunique <=3, it can be considered as nominal
-            infer.append('nominal')
             remarks.append('nunique={}'.format(nunique))
+            if nunique==1:
+                # nunique==1, constant
+                infer.append('constant')
+            else:
+                # nunique <=3, it can be considered as nominal
+                infer.append('nominal')
     elif all_digitable:
         # not intable but digitable -> digitable
         infer.append('continuous')
