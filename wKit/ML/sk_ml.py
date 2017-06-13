@@ -11,7 +11,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 
 from stat import significant_level, krutest, f_oneway
-from ..utility.check_type import all_int_able, check_type
+from ..utility.check_dtype import all_int_able, check_type
 
 def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
     """
