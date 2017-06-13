@@ -9,9 +9,10 @@ from sklearn import linear_model, svm, tree, ensemble, neural_network, naive_bay
 from sklearn.metrics import mean_squared_error, f1_score, accuracy_score, confusion_matrix
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
-
 from stat import significant_level, krutest, f_oneway
+
 from ..utility.check_dtype import all_int_able, check_type
+
 
 def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
     """
@@ -73,6 +74,8 @@ def bounded_round(arr, mini, maxi):
 def fillna(df, how='mean'):
     """df is the dataset
     """
+    if how is None or how=='None':
+        return df
     if how == 'mean':
         return df.fillna(df.mean())
     return df.fillna(how)
