@@ -3,6 +3,7 @@ import locale
 locale.setlocale(locale.LC_ALL, 'english_USA')
 import numpy as np
 
+
 def check_type(a_list, types):
     """
     True if type of all elements isinstance of type or in types
@@ -10,6 +11,14 @@ def check_type(a_list, types):
     :param types: type or types
     """
     return all(isinstance(x, types) for x in a_list)
+
+
+def all_int(alist):
+    return all(isinstance(x, (int, long)) for x in alist)
+
+
+def all_digit(alist):
+    return all(isinstance(x, (int, long, float, complex)) for x in alist)
 
 
 def all_int_able(alist):
