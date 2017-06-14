@@ -1,7 +1,8 @@
 # coding=utf-8
 import numpy as np
 import pandas as pd
-from wKit.ML.stat import infer_dtype_stat
+
+from wKit.stat.infer import stat_dtype
 
 
 def discretize(measurement, how='std', alpha=(0, 0.5, 1, 2), nbins=10, retn_bins=False):
@@ -70,7 +71,7 @@ def discretize_features(arr2d, how='std', alpha=(0, 0.5, 1, 2), nbins=10):
     discrete = []
     for i in range(n_features):
         arr = arr2d[:, i].copy()
-        infer, _ = infer_dtype_stat(arr)
+        infer, _ = stat_dtype(arr)
         if 'nominal' not in infer:
             arr = [float(x) for x in arr]
             discrete.append(discretize(arr, how=how, alpha=alpha, nbins=nbins))
