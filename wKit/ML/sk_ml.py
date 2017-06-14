@@ -165,6 +165,8 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
         model_res = pd.read_csv(path_model_res, index_col=0)
         best = model_res.iloc[0].to_dict()
         param = eval(best['params'])
+        if 'n_jobs' in model.get_params().keys():
+            model.set_params(n_jobs=n_jobs)
         model.set_params(**param)
         if fit_when_load:
             if verbose:
