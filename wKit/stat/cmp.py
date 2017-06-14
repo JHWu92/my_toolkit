@@ -35,7 +35,8 @@ def cmp_rank_list(base, new, gold=None):
             gold_rank = gold.index(item)
             temp['gold_rank'] = gold_rank
             if rank is not None:
-                temp['gold_change'] = gold_rank-rank
+                change = gold_rank-rank
+                temp['gold_change'] = '+%d' % change if change > 0 else str(change)
 
     res = []
     for rank, item in enumerate(new):
