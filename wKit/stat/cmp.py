@@ -37,7 +37,7 @@ def cmp_rank_list(base, new, gold=None):
             if rank is not None:
                 change = gold_rank-rank
                 temp['gold_change'] = '+%d' % change if change > 0 else str(change)
-
+                # temp['gold_change'] = change
     res = []
     for rank, item in enumerate(new):
         if item in base_items:
@@ -49,8 +49,8 @@ def cmp_rank_list(base, new, gold=None):
             if has_score:
                 ns, bs = new_scores[rank], base_scores[rank_base]
                 score_change = ns * 100.0 / bs - 100
-                score_change = '+{:.02f}%'.format(score_change) if score_change > 0 else '{:.02f}%'.format(score_change)
-                tmp.update({'score_new': ns, 'score_base': bs, 'score_change': score_change})
+                # score_change = '+{:.02f}%'.format(score_change) if score_change > 0 else '{:.02f}%'.format(score_change)
+                tmp.update({'score_new': ns, 'score_base': bs, 'score_change%': score_change})
             res.append(tmp)
         else:
             tmp = {'item': item, 'rank_change': '+', 'rank_new': rank}
@@ -71,7 +71,7 @@ def cmp_rank_list(base, new, gold=None):
     cols = ['item']
     if gold is not None: cols += ['gold_rank', 'gold_change']
     cols += ['rank_change']
-    if has_score: cols += ['score_change']
+    if has_score: cols += ['score_change%']
     cols += ['rank_new', 'rank_base']
     if has_score: cols += ['score_new', 'score_base']
     for col in list(set(cols) - set(df.columns)):
