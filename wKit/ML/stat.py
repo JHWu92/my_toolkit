@@ -11,7 +11,7 @@ def significant_level(p):
         return '**'
     if p <= 0.05:
         return '*'
-    return '-'
+    return ''
 
 
 def krutest(list_obs):
