@@ -39,7 +39,7 @@ def box(arrs, box_names=None, title=None, orientation='v', reverse=False):
     return fig
 
 
-def hist(arrs, names=None, title=None, orientation='v'):
+def hist(arrs, names=None, title=None, orientation='v', histnorm='probability'):
     """
     hist with plotly
 
@@ -49,7 +49,7 @@ def hist(arrs, names=None, title=None, orientation='v'):
     names: list. Names for each hist.
     title: str. title of the graph. Default None
     orientation: {'v', 'h'}, default v(verticle)
-
+    histnorm: y axis : user percentage if 'probability', else count.
     Return
     ----------
     plotly.graph_objs.Figure for iplot/plot
@@ -62,9 +62,9 @@ def hist(arrs, names=None, title=None, orientation='v'):
 
     order = range(size)
     if orientation == 'v':
-        data = [go.Histogram(x=arrs[i], name=names[i]) for i in order]
+        data = [go.Histogram(x=arrs[i], name=names[i], histnorm=histnorm) for i in order]
     elif orientation == 'h':
-        data = [go.Histogram(y=arrs[i], name=names[i]) for i in order]
+        data = [go.Histogram(y=arrs[i], name=names[i], histnorm=histnorm) for i in order]
     else:
         raise ValueError("orienation should be in {'v', 'h'}")
 
