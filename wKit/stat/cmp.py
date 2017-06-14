@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 
-def cmp_rank_list(base, new, retn_type='df'):
+def cmp_rank_list(base, new, gold=None):
     """
 
     Parameters
@@ -12,7 +12,7 @@ def cmp_rank_list(base, new, retn_type='df'):
         1. array-like: items only, whose order is the rank.
         2. 2darray-like: shape=(N, 2), N samples. (hashable, float/int).
             [:, 0] are items, [:, 1] are scores on which the rank is based
-    retn_type: return type. default 'df', pd.DataFrame. else list of dict.
+    gold: list, gold standard rank.
 
     :return:
     columns: ['item', 'rank_change', 'score_change', 'rank_new', 'rank_base', 'score_new', 'score_base']
@@ -30,6 +30,13 @@ def cmp_rank_list(base, new, retn_type='df'):
     new_items = set(new)
     assert len(base_items) == len(base) and len(new_items) == len(new), 'Duplicates in list'
 
+    def add_gold_rank(temp, item, rank=None):
+        if gold is not None and item in gold:
+            gold_rank = gold.index(item)
+            temp['gold_rank'] = gold_rank
+            if rank is not None:
+                temp['gold_change'] = gold_rank-rank
+
     res = []
     for rank, item in enumerate(new):
         if item in base_items:
@@ -37,30 +44,36 @@ def cmp_rank_list(base, new, retn_type='df'):
             change = rank_base - rank
             change = '+%d' % change if change > 0 else str(change)
             tmp = {'item': item, 'rank_change': change, 'rank_new': rank, 'rank_base': rank_base}
+            add_gold_rank(tmp, item, rank)
             if has_score:
                 ns, bs = new_scores[rank], base_scores[rank_base]
-                print ns, bs, type(ns)
                 score_change = ns * 100.0 / bs - 100
                 score_change = '+{:.02f}%'.format(score_change) if score_change > 0 else '{:.02f}%'.format(score_change)
                 tmp.update({'score_new': ns, 'score_base': bs, 'score_change': score_change})
             res.append(tmp)
         else:
-            tmp = {'item': item, 'rank_change': 'new', 'rank_new': rank}
+            tmp = {'item': item, 'rank_change': '+', 'rank_new': rank}
+            add_gold_rank(tmp, item, rank)
             if has_score:
                 tmp['score_new'] = new_scores[rank]
             res.append(tmp)
 
     for rank, item in enumerate(base):
         if item not in new_items:
-            tmp = {'item': item, 'rank_change': 'gone', 'rank_base': rank}
+            tmp = {'item': item, 'rank_change': '-', 'rank_base': rank}
+            add_gold_rank(tmp, item)
             if has_score:
                 tmp['score_base'] = base_scores[rank]
             res.append(tmp)
 
-    if retn_type == 'df':
-        df = pd.DataFrame(res)
-        if has_score:
-            return df[['item', 'rank_change', 'score_change', 'rank_new', 'rank_base', 'score_new', 'score_base']]
-        return df[['item', 'rank_change', 'rank_new', 'rank_base']]
-
-    return res
+    df = pd.DataFrame(res)
+    cols = ['item']
+    if gold is not None: cols += ['gold_rank', 'gold_change']
+    cols += ['rank_change']
+    if has_score: cols += ['score_change']
+    cols += ['rank_new', 'rank_base']
+    if has_score: cols += ['score_new', 'score_base']
+    for col in list(set(cols) - set(df.columns)):
+        df[col] = np.nan
+    df.fillna('', inplace=True)
+    return df[cols]
