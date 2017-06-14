@@ -506,13 +506,18 @@ def ftr_diff_stat_test(fitted_model, test_x, test_y, target_tp, verbose=False):
         test = [g[:, i] for g in groups]
         anova_stat, anova_p = f_oneway(test)
         kru_stat, kru_p = krutest(test)
-        test_res.append(
-            {'var_name'   : var,
+        res = {'var_name'   : var,
              'anova1way_p': anova_p, 'anova1way_stat': anova_stat,
              'kruskal_p'  : kru_p, 'kruskal_stat': kru_stat,
-             })
+             }
+        if len(groups)==2:
+            res['mean_dff'] = np.abs(np.mean(test[0]) - np.mean(test[1]))
+        test_res.append(res)
     df = pd.DataFrame(test_res).set_index("var_name")
     df['annova1way_siglv'] = df.anova1way_p.apply(significant_level)
     df['kruskal_signlv'] = df.kruskal_p.apply(significant_level)
-    df.sort_values('kruskal_p', inplace=True)
+    if len(groups) == 2:
+        df.sort_values('mean_dff', inplace=True, ascending=False)
+    else:
+        df.sort_values('kruskal_p', inplace=True)
     return df
