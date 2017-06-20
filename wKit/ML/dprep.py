@@ -83,3 +83,29 @@ def discretize_features(arr2d, how='std', alpha=(0, 0.5, 1, 2), nbins=10):
     if idx is not None:
         darr2d = pd.DataFrame(darr2d, index=idx, columns=col)
     return darr2d
+
+
+def fillna_group_mean(df, group):
+    """
+    df: feature dataset
+    group: columns = ['index', 'name']
+    index of group == index of df
+
+    Examples
+    ---------
+    >>> data = [
+        (1, 2, 3, 4, 5, 6, 7, 8),
+        (38, 18, None, 193, 98, 874, None, None),
+        (939,840,19, 8028, 9280, None, 92, None),
+        (None, 1, 39, None,92 , None, 183, 830),
+        (1, 49, 20, None, 180, 918, None, 9183),
+    ]
+    >>> group = [(0, 1), (1, 1), (2, 1), (3, 2), (4,2)]
+    >>> data = pd.DataFrame(data)
+    >>> group = pd.DataFrame(group, columns=['index', 'name'])
+    >>> fillna_group_mean(data, group)
+
+    """
+    group_mean = group.groupby('name')['index'].apply(list).apply(lambda x: df.loc[x].mean()).reset_index()
+    df_for_fillna = group.merge(group_mean, how='left').set_index('index').drop('name', axis=1)
+    return df.fillna(df_for_fillna)
