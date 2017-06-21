@@ -226,6 +226,10 @@ def grid_cv_models(x, y, models, params, order=None, path='',
         each line is the best parameters for that model;
         type of column "best_model" is sklearn models.
     """
+
+    if len(y.shape) != 1:
+        print 'grid_cv_models, y.shape should be (R,)', y.shape
+
     path_cv_best = os.path.join(path, 'cv_%d_best_models.csv' % cv)
 
     # if cv best result exists and not redeo, load existing parameters
