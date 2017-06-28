@@ -1,6 +1,9 @@
 # coding=utf-8
 import locale
-locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+try:  # linux
+    locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+except:  # windows
+    locale.setlocale(locale.LC_ALL, 'english_USA')
 import numpy as np
 
 
