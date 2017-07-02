@@ -43,7 +43,7 @@ def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
         'SVM'      : svm.SVC(),
         'linearSVM': svm.LinearSVC(),
         'MLPcls'   : neural_network.MLPClassifier(),
-        'GNBcls'   : naive_bayes.GaussianNB(),
+        # 'GNBcls'   : naive_bayes.GaussianNB(),  # doesn't accept sparse matrix
     }
 
     models = {}
@@ -290,17 +290,20 @@ def model_order_by_speed(speed=2):
     1: fast+medium
     2: fast+medium+slow(default)
     """
-    # grid cv on: 10k * 800
-    fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR', 'MLPreg']],
-            ['cls', ['GNBcls', 'logistics', 'DTcls', 'linearSVM', 'MLPcls']]]  # less than 5 min
-    medium = [['reg', ['ADAreg', 'RFreg', 'BAGreg']],
-              ['cls', ['ADAcls', 'RFcls', 'BAGcls']]]  # 20 min ~ 1h
-    slow = [['reg', ['SVR', 'GDBreg']], ['cls', ['SVM', 'GDBcls']]]  # 2h~8h
+    # grid cv with default parameters option on: 10k * 800
+    fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR']],
+            ['cls', ['logistics', 'DTcls', 'linearSVM']]]  # less than 5 min
+    medium = [['reg', ['ADAreg', 'RFreg', 'MLPreg']],
+              ['cls', ['ADAcls', 'RFcls', 'MLPcls']]]  # 5 min ~ 40 min
+    slow = [['reg', ['BAGreg']], ['cls', ['BAGcls']]]  # ~ 1h
+    way_slow = [['reg', ['SVR', 'GDBreg']], ['cls', ['SVM', 'GDBcls']]]  # 2h~8h
     if speed == 0:
         return fast
     if speed == 1:
         return fast + medium
-    return fast + medium + slow
+    if speed == 1:
+        return fast + medium + slow
+    return fast + medium + slow + way_slow
 
 
 # ################################################
