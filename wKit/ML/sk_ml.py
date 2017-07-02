@@ -93,9 +93,9 @@ def scaler_by_name(name):
 
 def grid_cv_default_params():
     # GDBreg's parameters are deliberately cut down.
-    params_gdb = {'n_estimators': [10, 50, 100], 'max_features': [0.1, 0.5, 1.], 'learning_rate': np.logspace(-4, 1, 3),
+    params_gdb = {'n_estimators': [10, 50, 100], 'max_features': ['sqrt', 'log2'], 'learning_rate': np.logspace(-4, 1, 3),
                   'max_depth'   : [3, 10, 50]},
-    params_rf = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.1, 0.3, 0.5, 1.]}
+    params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2]}
     params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
     params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
 
