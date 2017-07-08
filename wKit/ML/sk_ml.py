@@ -161,7 +161,7 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     path_model_res = os.path.join(path, 'cv_%d_model_%s.csv' % (cv, name))
 
     if os.path.exists(path_model_res) and not redo:
-        print 'loading existing model', kind, name
+        print('loading existing model', kind, name)
         model_res = pd.read_csv(path_model_res, index_col=0)
         best = model_res.iloc[0].to_dict()
         param = eval(best['params'])
@@ -170,17 +170,17 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
         model.set_params(**param)
         if fit_when_load:
             if verbose:
-                print 'fitting model', kind, name
+                print('fitting model', kind, name)
             model.fit(x, y)
         result = {'grid_cv_time' : None, 'score': scoring, 'model_name': name, 'kind': kind,
                   'mean_test'    : best['mean_test_score'], 'mean_train': best['mean_train_score'],
                   'mean_fit_time': best['mean_fit_time'], 'best_params': param, 'best_model': model,
                   }
-        print 'loaded existing result for model:', name
+        print('loaded existing result for model:', name)
         return result
 
     sub_start = dtm.now()
-    print sub_start, 'CVing: kind = {}, model = {}'.format(kind, name)
+    print(sub_start, 'CVing: kind = {}, model = {}'.format(kind, name))
     clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring)
     clf.fit(x, y)
     sub_end = dtm.now()
@@ -192,11 +192,11 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     test_score, train_score, fit_time = df[['mean_test_score', 'mean_train_score', 'mean_fit_time']].values[0]
 
     if verbose:
-        print 'score: %s, best test = %.3f, train = %.3f, mean_fit_time = %f' % (
-            scoring, test_score, train_score, fit_time)
-        print 'best params', clf.best_params_
-        print sub_end, sub_end - sub_start
-        print
+        print('score: %s, best test = %.3f, train = %.3f, mean_fit_time = %f' % (
+            scoring, test_score, train_score, fit_time))
+        print('best params', clf.best_params_)
+        print(sub_end, sub_end - sub_start)
+        print()
 
     result = {
         'grid_cv_time' : sub_end - sub_start,
@@ -228,7 +228,7 @@ def grid_cv_models(x, y, models, params, order=None, path='',
     """
 
     if len(y.shape) != 1:
-        print 'grid_cv_models, y.shape should be (R,)', y.shape
+        print('grid_cv_models, y.shape should be (R,)', y.shape)
 
     path_cv_best = os.path.join(path, 'cv_%d_best_models.csv' % cv)
 
@@ -241,12 +241,12 @@ def grid_cv_models(x, y, models, params, order=None, path='',
             model = models[kind][name]
             model.set_params(**param)
             if fit_when_load:
-                if verbose: print 'fitting model', kind, name
+                if verbose: print('fitting model', kind, name)
                 model.fit(x, y)
             best_models.append(model)
 
         loaded_df_cv_res.best_model = best_models
-        print 'loaded existing cv-ed best parameters'
+        print('loaded existing cv-ed best parameters')
         return loaded_df_cv_res
 
     # redo or result not exists
@@ -257,14 +257,14 @@ def grid_cv_models(x, y, models, params, order=None, path='',
 
     for kind, kind_model_names in order:
         if kind not in models:
-            print kind, 'not in models'
+            print(kind, 'not in models')
             continue
         for name in kind_model_names:
             if name not in models[kind]:
-                print 'kind={} mode={} not in models, skipped'.format(kind, name)
+                print('kind={} mode={} not in models, skipped'.format(kind, name))
                 continue
             if name not in params[kind]:
-                print 'model', name, 'doesnt have tuning params, use {} instead'
+                print('model', name, 'doesnt have tuning params, use {} instead')
                 param = {}
             else:
                 param = params[kind][name]
@@ -275,7 +275,7 @@ def grid_cv_models(x, y, models, params, order=None, path='',
             cv_results.append(result)
 
     end = dtm.now()
-    print 'finished CV', end, end - start
+    print('finished CV', end, end - start)
 
     df_cv = pd.DataFrame(cv_results).set_index(['kind', 'model_name'])
     if save_res:
@@ -324,7 +324,7 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
     Return
         evaluation result as pd.DF, columns are defined by evaluator
     """
-    print 'evaluating grid cv'
+    print('evaluating grid cv')
     results = {}
     for (kind, name), model in df_cv.best_model.iteritems():
         results[kind, name] = evaluator(model, train_x, train_y, test_x, test_y)
@@ -507,7 +507,7 @@ def ftr_diff_stat_test(fitted_model, test_x, test_y, target_tp, verbose=False):
     for tp in target_tp:
         groups.append(test_x.values[idx[tp]])
         if verbose:
-            print 'True = {}, Pred = {}: len = {}'.format(tp[0], tp[1], len(idx[tp]))
+            print('True = {}, Pred = {}: len = {}'.format(tp[0], tp[1], len(idx[tp])))
 
     test_res = []
     for i in range(num_ftrs):

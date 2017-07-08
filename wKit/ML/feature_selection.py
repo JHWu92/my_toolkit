@@ -13,8 +13,8 @@ def help():
         if name == 'help':
             continue
         if isinstance(obj, types.FunctionType):
-            print 'Function:', name
-            print obj.__doc__
+            print('Function:', name)
+            print(obj.__doc__)
 
 
 def fselect(x, y, name, **kwargs):
@@ -30,7 +30,7 @@ def fselect(x, y, name, **kwargs):
         n_jobs: num of threads for rfecv_* feature selection
         param: param for some feature selection model. rfecv_*, stability_*
         thres: for thres based selection: has_value_thres, var_thres
-        verbose: True to print timestamp, default False
+        verbose: True to print(timestamp, default False
     :param kwargs
 
     Return array of boolean, True means important.
@@ -40,7 +40,7 @@ def fselect(x, y, name, **kwargs):
     if isinstance(y, pd.Series):
         y = y.values
     if kwargs.get('verbose', False):
-        print datetime.datetime.now(), 'feature selection with', name
+        print(datetime.datetime.now(), 'feature selection with', name)
     return globals()[name](x=x, y=y, **kwargs)
 
 
