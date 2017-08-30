@@ -1,6 +1,6 @@
 # coding=utf-8
 import numpy as np
-from dprep import discretize_features
+from .dprep import discretize_features
 from skfeature.function.information_theoretical_based import MRMR
 from sklearn.feature_selection import RFECV, VarianceThreshold
 from sklearn.linear_model import LinearRegression, RandomizedLasso, RandomizedLogisticRegression
