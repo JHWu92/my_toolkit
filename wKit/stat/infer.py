@@ -20,7 +20,7 @@ def stat_dtype(arr, tsv=False):
     infer = []
     size = len(arr)
 
-    all_digit = check_dtype.check_type(arr, (int, float, long))
+    all_digit = check_dtype.check_type(arr, (int, float, ))
     all_str = check_dtype.check_type(arr, str)
     all_digitable = check_dtype.all_digit_able(arr)
     all_intable = check_dtype.all_int_able(arr)

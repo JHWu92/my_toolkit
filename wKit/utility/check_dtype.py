@@ -17,11 +17,11 @@ def check_type(a_list, types):
 
 
 def all_int(alist):
-    return all(isinstance(x, (int, long)) for x in alist)
+    return all(isinstance(x, (int, )) for x in alist)
 
 
 def all_digit(alist):
-    return all(isinstance(x, (int, long, float, complex)) for x in alist)
+    return all(isinstance(x, (int, float, complex)) for x in alist)
 
 
 def all_int_able(alist):
