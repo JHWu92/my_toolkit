@@ -165,6 +165,7 @@ def mrmr(x, y, **kwargs):
     """
     n_features = x.shape[1]
     discrete_x = discretize_features(x)
-    rank = MRMR.mrmr(discrete_x, y)
+    rank = MRMR.mrmr(discrete_x, y)[0]
+    # print(rank)
     support = [True if i in rank else False for i in range(n_features)]
     return np.array(support)
