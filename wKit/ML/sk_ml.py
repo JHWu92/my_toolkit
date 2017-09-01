@@ -285,10 +285,11 @@ def grid_cv_models(x, y, models, params, order=None, path='',
 
 
 def model_order_by_speed(speed=2):
-    """ 3 level of speed:
+    """ 4 level of speed:
     0: fast
     1: fast+medium
     2: fast+medium+slow(default)
+    else: fast+medium+slow + way_slow
     """
     # grid cv with default parameters option on: 10k * 800
     fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR']],
@@ -301,7 +302,7 @@ def model_order_by_speed(speed=2):
         return fast
     if speed == 1:
         return fast + medium
-    if speed == 1:
+    if speed == 2:
         return fast + medium + slow
     return fast + medium + slow + way_slow
 
