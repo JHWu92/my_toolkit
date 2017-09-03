@@ -159,7 +159,7 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     """
     scoring = 'neg_mean_squared_error' if kind == 'reg' else 'f1_weighted'
     path_model_res = os.path.join(path, 'cv_%d_model_%s.csv' % (cv, name))
-
+    # TODO: if kind=='cls' and y.dtype==float, round y first. Then check # types, throw a warning if # >100
     if os.path.exists(path_model_res) and not redo:
         print('loading existing model', kind, name)
         model_res = pd.read_csv(path_model_res, index_col=0)
@@ -347,6 +347,7 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     prediction by regression will be round up (bounded by max and min of Ys) as a class label
     :return: metrics: mse, accuracy and weighted f1, for both train and test
     """
+    # TODO: if y is float, round y, then check # labels, if # >100, throw a warning
     min_y, max_y = train_y.min(), train_y.max()
 
     model.fit(train_x, train_y)
