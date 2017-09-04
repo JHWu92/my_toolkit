@@ -247,6 +247,12 @@ def grid_cv_models(x, y, models, params, order=None, path='',
             model.set_params(**param)
             if fit_when_load:
                 if verbose: print('fitting model', kind, name)
+
+                if kind == 'cls' and y.dtype == float:
+                    y = y.round()
+                    if len(set(y)) > 100:
+                        print("grid_cv_a_model: rounded y has more than 100 labels")
+
                 model.fit(x, y)
             best_models.append(model)
 
