@@ -384,7 +384,7 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
 
     result = {
         'train_f1_weighted' : f1_weighted_train,
-        'train_f1_macro': f1_macro_train
+        'train_f1_macro': f1_macro_train,
         'train_acc': acc_train,
         'train_mse': mse_train,
         'test_f1_weighted'  : f1_weighted_test,
