@@ -97,7 +97,7 @@ def grid_cv_default_params():
                   'max_depth'   : [3, 10, 50]},
     params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2]}
     params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
-    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.5, 0.7, 1.0]}
+    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
 
     params_mlp = {'hidden_layer_sizes': [(100,), (5, 2), (20, 5), (100, 20), (100, 20, 5)],
                   'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]}
@@ -186,6 +186,10 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
 
     sub_start = dtm.now()
     print(sub_start, 'CVing: kind = {}, model = {}'.format(kind, name))
+
+    if name in ('BAGcls', 'BAGreg') and x.shape[1] < 4:
+        param = {'n_estimators': [10, 30, 50, 100, 256, 500]}
+
     clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring)
     clf.fit(x, y)
     sub_end = dtm.now()
