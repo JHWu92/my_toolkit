@@ -147,6 +147,11 @@ def rfecv_linsvc(x, y, **kwargs):
     ----------
     array of boolean, True means important.
     """
+    if y.dtype==float:
+        y = y.round()
+        if len(set(y)) > 100:
+            print("grid_cv_a_model: rounded y has more than 100 labels")
+
     cv = kwargs.get('cv', 5)
     n_jobs = kwargs.get('n_jobs', 4)
     lscv = LinearSVC()
