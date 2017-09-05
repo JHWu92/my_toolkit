@@ -97,7 +97,7 @@ def grid_cv_default_params():
                   'max_depth'   : [3, 10, 50]},
     params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2]}
     params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
-    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.5, 0.7, 1.0]}
+    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
 
     params_mlp = {'hidden_layer_sizes': [(100,), (5, 2), (20, 5), (100, 20), (100, 20, 5)],
                   'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]}
@@ -159,7 +159,12 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     """
     scoring = 'neg_mean_squared_error' if kind == 'reg' else 'f1_weighted'
     path_model_res = os.path.join(path, 'cv_%d_model_%s.csv' % (cv, name))
-    # TODO: if kind=='cls' and y.dtype==float, round y first. Then check # types, throw a warning if # >100
+
+    if kind=='cls' and y.dtype==float:
+        y = y.round()
+        if len(set(y)) > 100:
+            print("grid_cv_a_model: rounded y has more than 100 labels")
+
     if os.path.exists(path_model_res) and not redo:
         print('loading existing model', kind, name)
         model_res = pd.read_csv(path_model_res, index_col=0)
@@ -181,6 +186,10 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
 
     sub_start = dtm.now()
     print(sub_start, 'CVing: kind = {}, model = {}'.format(kind, name))
+
+    if name in ('BAGcls', 'BAGreg') and x.shape[1] < 4:
+        param = {'n_estimators': [10, 30, 50, 100, 256, 500]}
+
     clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring)
     clf.fit(x, y)
     sub_end = dtm.now()
@@ -242,6 +251,12 @@ def grid_cv_models(x, y, models, params, order=None, path='',
             model.set_params(**param)
             if fit_when_load:
                 if verbose: print('fitting model', kind, name)
+
+                if kind == 'cls' and y.dtype == float:
+                    y = y.round()
+                    if len(set(y)) > 100:
+                        print("grid_cv_a_model: rounded y has more than 100 labels")
+
                 model.fit(x, y)
             best_models.append(model)
 
@@ -347,8 +362,17 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     prediction by regression will be round up (bounded by max and min of Ys) as a class label
     :return: metrics: mse, accuracy and weighted f1, for both train and test
     """
-    # TODO: if y is float, round y, then check # labels, if # >100, throw a warning
+
+    # round real number into int, in order to get f1 score.
+    if train_y.dtype==float:
+        train_y = train_y.round()
+        if len(set(train_y)) > 100:
+            print("grid_cv_a_model: rounded y has more than 100 labels")
+
     min_y, max_y = train_y.min(), train_y.max()
+
+    if test_y.dtype==float:
+        test_y = bounded_round(test_y, min_y, max_y)
 
     model.fit(train_x, train_y)
 
@@ -357,20 +381,24 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
 
     mse_train = mean_squared_error(train_y, train_pred)
     acc_train = accuracy_score(train_y, train_pred_round)
-    f1_train = f1_score(train_y, train_pred_round, average='weighted')
+    f1_weighted_train = f1_score(train_y, train_pred_round, average='weighted')
+    f1_macro_train = f1_score(train_y, train_pred_round, average='macro')
 
     test_pred = model.predict(test_x)
     test_pred_round = bounded_round(test_pred, min_y, max_y)
 
     mse_test = mean_squared_error(test_y, test_pred)
     acc_test = accuracy_score(test_y, test_pred_round)
-    f1_test = f1_score(test_y, test_pred_round, average='weighted')
+    f1_weighted_test = f1_score(test_y, test_pred_round, average='weighted')
+    f1_macro_test = f1_score(test_y, test_pred_round, average='macro')
 
     result = {
-        'train_f1' : f1_train,
+        'train_f1_weighted' : f1_weighted_train,
+        'train_f1_macro': f1_macro_train,
         'train_acc': acc_train,
         'train_mse': mse_train,
-        'test_f1'  : f1_test,
+        'test_f1_weighted'  : f1_weighted_test,
+        'test_f1_macro'  : f1_macro_test,
         'test_acc' : acc_test,
         'test_mse' : mse_test,
     }
@@ -448,6 +476,14 @@ def confusion_matrix_as_df(fitted_model, x, y, labels=None, normalize=False, sho
     """
 
     pred_y = fitted_model.predict(x)
+
+    if pred_y.dtype == float:
+        pred_y = pred_y.round()
+    if y.dtype == float:
+        y = y.round()
+    if len(set(y)) > 100:
+        print('confusion matrix as df: nunique rounded y > 100')
+
     if labels is None:
         labels = pd.unique(y)
     cfsn = confusion_matrix(y, pred_y, labels=labels)
