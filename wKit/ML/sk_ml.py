@@ -221,14 +221,15 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     return result
 
 
-def grid_cv_models(x, y, models, params, order=None, path='',
-                   n_jobs=4, cv=5, save_res=True, redo=False, verbose=False, fit_when_load=True):
+def grid_cv_models(x, y, models, params, order=None, path='', n_jobs=4, cv=5, save_res=True,
+                   redo=False, redo_individual=False, verbose=False, fit_when_load=True):
     """
     regression model is evaluated by neg_mean_squared_error
     classification model is evaluated by f1_weighted
     if order is None, iterate over models' keys, otherwise iterate by order
     get tuning parameters based on key, if no matched paramters, that model will be skipped
     if not redo and the result exists, optimum parameters will be loaded using model.set_params(**loaded)
+    if not redo_individual and result for individual classifier exists, the best params for the model will be loaded.
     when loading model, run empty model.fit(x,y) if fit_when_load=True
     :return:
         index: (kind, name);
@@ -285,8 +286,8 @@ def grid_cv_models(x, y, models, params, order=None, path='',
                 param = params[kind][name]
             model = models[kind][name]
             result = grid_cv_a_model(x, y, model, param, kind, name,
-                                     path=path, n_jobs=n_jobs, cv=cv, verbose=verbose, redo=redo, save_res=save_res,
-                                     fit_when_load=fit_when_load)
+                                     path=path, n_jobs=n_jobs, cv=cv, verbose=verbose,
+                                     redo=redo_individual, save_res=save_res, fit_when_load=fit_when_load)
             cv_results.append(result)
 
     end = dtm.now()
