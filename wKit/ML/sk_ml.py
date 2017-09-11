@@ -347,8 +347,8 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
         results[kind, name] = evaluator(model, train_x, train_y, test_x, test_y)
 
     df_results = pd.DataFrame(results).T
-    if 'test_f1' in df_results.columns:
-        df_results.sort_values(by='test_f1', ascending=False, inplace=True)
+    if 'test_f1_weighted' in df_results.columns:
+        df_results.sort_values(by='test_f1_weighted', ascending=False, inplace=True)
 
     if save_res:
         df_results.to_csv(os.path.join(path, 'cv_%d_best_models_evaluation.csv' % cv))
@@ -380,28 +380,32 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     train_pred = model.predict(train_x)
     train_pred_round = bounded_round(train_pred, min_y, max_y)
 
-    mse_train = mean_squared_error(train_y, train_pred)
-    acc_train = accuracy_score(train_y, train_pred_round)
-    f1_weighted_train = f1_score(train_y, train_pred_round, average='weighted')
-    f1_macro_train = f1_score(train_y, train_pred_round, average='macro')
+    train_mse = mean_squared_error(train_y, train_pred)
+    train_acc = accuracy_score(train_y, train_pred_round)
+    train_f1_weighted = f1_score(train_y, train_pred_round, average='weighted')
+    train_f1_macro = f1_score(train_y, train_pred_round, average='macro')
+    train_f1_micro = f1_score(train_y, train_pred_round, average='micro')
 
     test_pred = model.predict(test_x)
     test_pred_round = bounded_round(test_pred, min_y, max_y)
 
-    mse_test = mean_squared_error(test_y, test_pred)
-    acc_test = accuracy_score(test_y, test_pred_round)
-    f1_weighted_test = f1_score(test_y, test_pred_round, average='weighted')
-    f1_macro_test = f1_score(test_y, test_pred_round, average='macro')
+    test_mse = mean_squared_error(test_y, test_pred)
+    test_acc = accuracy_score(test_y, test_pred_round)
+    test_f1_weighted = f1_score(test_y, test_pred_round, average='weighted')
+    test_f1_macro = f1_score(test_y, test_pred_round, average='macro')
+    test_f1_micro = f1_score(test_y, test_pred_round, average='micro')
 
     result = {
-        'train_f1_weighted' : f1_weighted_train,
-        'train_f1_macro': f1_macro_train,
-        'train_acc': acc_train,
-        'train_mse': mse_train,
-        'test_f1_weighted'  : f1_weighted_test,
-        'test_f1_macro'  : f1_macro_test,
-        'test_acc' : acc_test,
-        'test_mse' : mse_test,
+        'train_f1_weighted' : train_f1_weighted,
+        'train_f1_macro': train_f1_macro,
+        'train_f1_micro': train_f1_micro,
+        'train_acc': train_acc,
+        'train_mse': train_mse,
+        'test_f1_weighted'  : test_f1_weighted,
+        'test_f1_macro'  : test_f1_macro,
+        'test_f1_micro': test_f1_micro,
+        'test_acc' : test_acc,
+        'test_mse' : test_mse,
     }
     return result
 
