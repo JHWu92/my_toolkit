@@ -13,8 +13,13 @@ from sklearn.preprocessing import MinMaxScaler
 from wKit.stat.tests import significant_level, krutest, f_oneway
 from ..utility.check_dtype import all_int_able, check_type
 
+try:
+    import xgboost
+except ImportError:
+    xgboost = None
 
-def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
+
+def sk_models(reg=True, cls=True, stoplist=()):
     """
     return sk models with names by regression and/or classification.
     default stoplist is ('SVM', 'SVR', 'GDBreg', 'GDBcls') because they are too slow
@@ -46,6 +51,10 @@ def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
         # 'GNBcls'   : naive_bayes.GaussianNB(),  # doesn't accept sparse matrix
     }
 
+    if xgboost is not None:
+        reg_models['XGBreg'] = xgboost.XGBRegressor()
+        cls_models['XGBcls'] = xgboost.XGBClassifier()
+
     models = {}
     if reg:
         for name in stoplist: reg_models.pop(name, None)
@@ -54,6 +63,32 @@ def sk_models(reg=True, cls=True, stoplist=('SVM', 'SVR', 'GDBreg', 'GDBcls')):
         for name in stoplist: cls_models.pop(name, None)
         models['cls'] = cls_models
     return models
+
+
+def model_order_by_speed(speed=2):
+    """ 4 level of speed:
+    0: fast
+    1: fast+medium
+    2: fast+medium+slow(default)
+    else: fast+medium+slow + way_slow
+    """
+    # grid cv with default parameters option on: 10k * 800
+    fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR']],
+            ['cls', ['logistics', 'DTcls', 'linearSVM']]]  # less than 5 min
+    medium = [['reg', ['ADAreg', 'RFreg', 'MLPreg']],
+              ['cls', ['ADAcls', 'RFcls', 'MLPcls']]]  # 5 min ~ 40 min
+    slow = [['reg', ['BAGreg']], ['cls', ['BAGcls']]]  # ~ 1h
+    way_slow = [['reg', ['SVR', 'GDBreg']], ['cls', ['SVM', 'GDBcls']]]  # 2h~8h
+    if xgboost is not None:
+        way_slow += [['reg', ['XGBreg']], ['cls', ['XGBcls']]]
+
+    if speed == 0:
+        return fast
+    if speed == 1:
+        return fast + medium
+    if speed == 2:
+        return fast + medium + slow
+    return fast + medium + slow + way_slow
 
 
 # ################################################
@@ -92,6 +127,7 @@ def scaler_by_name(name):
 # ################################################
 
 def grid_cv_default_params():
+    # TODO: read about Hyperopt https://github.com/hyperopt/hyperopt/wiki/FMin
     # GDBreg's parameters are deliberately cut down.
     params_gdb = {'n_estimators': [10, 50, 100], 'max_features': ['sqrt', 'log2'], 'learning_rate': np.logspace(-4, 1, 3),
                   'max_depth'   : [3, 10, 50]},
@@ -117,7 +153,12 @@ def grid_cv_default_params():
         {'kernel': ['sigmoid'], 'C': c_s, 'gamma': gamma_s},
         {'kernel': ['poly'], 'C': c_s, 'gamma': gamma_s, 'degree': [3]},
     ]
-
+    params_xgb = {'n_estimators': [100, 500],
+                  'min_child_weight': [1, 5], 'gamma': [0, 0.1],
+                  'learning_rate': [0.01, 0.05, 0.1, 0.3],
+                  'subsample': [0.7, 1], 'colsample_bytree': [0.7, 1],
+                  'silent': [1],
+                  }
     params_reg = {
         # regression
         'ols'      : {},
@@ -131,6 +172,7 @@ def grid_cv_default_params():
         'MLPreg'   : params_mlp,
         'SVR'      : params_svr,
         'linearSVR': {'C': c_s, 'loss': ['epsilon_insensitive', 'squared_epsilon_insensitive'], 'epsilon': [0, 0.1, 1]},
+        'XGBreg': params_xgb,
     }
 
     params_cls = {
@@ -145,6 +187,7 @@ def grid_cv_default_params():
         'SVM'      : params_svm,
         'MLPcls'   : params_mlp,
         'linearSVM': {'C': c_s, 'loss': ['hinge', 'squared_hinge']},
+        'XGBcls': params_xgb,
     }
 
     return {'cls': params_cls, 'reg': params_reg}
@@ -298,29 +341,6 @@ def grid_cv_models(x, y, models, params, order=None, path='', n_jobs=4, cv=5, sa
         df_cv.to_csv(path_cv_best)
 
     return df_cv
-
-
-def model_order_by_speed(speed=2):
-    """ 4 level of speed:
-    0: fast
-    1: fast+medium
-    2: fast+medium+slow(default)
-    else: fast+medium+slow + way_slow
-    """
-    # grid cv with default parameters option on: 10k * 800
-    fast = [['reg', ['ols', 'lasso', 'ridge', 'DTreg', 'linearSVR']],
-            ['cls', ['logistics', 'DTcls', 'linearSVM']]]  # less than 5 min
-    medium = [['reg', ['ADAreg', 'RFreg', 'MLPreg']],
-              ['cls', ['ADAcls', 'RFcls', 'MLPcls']]]  # 5 min ~ 40 min
-    slow = [['reg', ['BAGreg']], ['cls', ['BAGcls']]]  # ~ 1h
-    way_slow = [['reg', ['SVR', 'GDBreg']], ['cls', ['SVM', 'GDBcls']]]  # 2h~8h
-    if speed == 0:
-        return fast
-    if speed == 1:
-        return fast + medium
-    if speed == 2:
-        return fast + medium + slow
-    return fast + medium + slow + way_slow
 
 
 # ################################################
