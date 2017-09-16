@@ -236,6 +236,10 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
 
     if name in ('BAGcls', 'BAGreg') and x.shape[1] < 4:
         param = {'n_estimators': [10, 30, 50, 100, 256, 500]}
+    if name in ('XGBreg', 'XGBcls') and x.shape[1] < 4:
+        import copy
+        param = copy.deepcopy(param)
+        param['colsample_bytree'] = [1]
 
     clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring, verbose=1)
     clf.fit(x, y)
