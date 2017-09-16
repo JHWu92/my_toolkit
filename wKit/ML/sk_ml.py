@@ -52,8 +52,8 @@ def sk_models(reg=True, cls=True, stoplist=()):
     }
 
     if xgboost is not None:
-        reg_models['XGBreg'] = xgboost.XGBRegressor()
-        cls_models['XGBcls'] = xgboost.XGBClassifier()
+        reg_models['XGBreg'] = xgboost.sklearn.XGBRegressor()
+        cls_models['XGBcls'] = xgboost.sklearn.XGBClassifier()
 
     models = {}
     if reg:
@@ -109,7 +109,7 @@ def bounded_round(arr, mini, maxi):
 def fillna(df, how='mean'):
     """df is the dataset
     """
-    if how is None or how=='None':
+    if how is None or how == 'None':
         return df
     if how == 'mean':
         return df.fillna(df.mean())
@@ -129,8 +129,9 @@ def scaler_by_name(name):
 def grid_cv_default_params():
     # TODO: read about Hyperopt https://github.com/hyperopt/hyperopt/wiki/FMin
     # GDBreg's parameters are deliberately cut down.
-    params_gdb = {'n_estimators': [10, 50, 100], 'max_features': ['sqrt', 'log2'], 'learning_rate': np.logspace(-4, 1, 3),
-                  'max_depth'   : [3, 10, 50]},
+    params_gdb = {'n_estimators' : [10, 50, 100], 'max_features': ['sqrt', 'log2'],
+                  'learning_rate': np.logspace(-4, 1, 3),
+                  'max_depth'    : [3, 10, 50]},
     params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2]}
     params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
     params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
@@ -153,12 +154,15 @@ def grid_cv_default_params():
         {'kernel': ['sigmoid'], 'C': c_s, 'gamma': gamma_s},
         {'kernel': ['poly'], 'C': c_s, 'gamma': gamma_s, 'degree': [3]},
     ]
-    params_xgb = {'n_estimators': [100, 500],
-                  'min_child_weight': [1, 5], 'gamma': [0, 0.1],
-                  'learning_rate': [0.01, 0.05, 0.1, 0.3],
-                  'subsample': [0.7, 1], 'colsample_bytree': [0.7, 1],
-                  'silent': [1],
-                  }
+    params_xgb = {
+        'min_child_weight': [1, 5], 'gamma': [0, 0.1],
+        'learning_rate'   : [0.01, 0.05, 0.1, 0.3], 'colsample_bytree': [0.7, 1],
+        'subsample': [0.7, 1],
+        'silent'          : [1],
+        'nthread'         : [1],  # without it, XGBClassifier will hang, or XGBReg will train really slow. Bad interaction with n_jobs in GridSearchCV
+        'n_estimators'    : [500],
+    }
+    # params_xgb={}
     params_reg = {
         # regression
         'ols'      : {},
@@ -172,7 +176,7 @@ def grid_cv_default_params():
         'MLPreg'   : params_mlp,
         'SVR'      : params_svr,
         'linearSVR': {'C': c_s, 'loss': ['epsilon_insensitive', 'squared_epsilon_insensitive'], 'epsilon': [0, 0.1, 1]},
-        'XGBreg': params_xgb,
+        'XGBreg'   : params_xgb,
     }
 
     params_cls = {
@@ -187,7 +191,7 @@ def grid_cv_default_params():
         'SVM'      : params_svm,
         'MLPcls'   : params_mlp,
         'linearSVM': {'C': c_s, 'loss': ['hinge', 'squared_hinge']},
-        'XGBcls': params_xgb,
+        'XGBcls'   : params_xgb,
     }
 
     return {'cls': params_cls, 'reg': params_reg}
@@ -203,7 +207,7 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     scoring = 'neg_mean_squared_error' if kind == 'reg' else 'f1_weighted'
     path_model_res = os.path.join(path, 'cv_%d_model_%s.csv' % (cv, name))
 
-    if kind=='cls' and y.dtype==float:
+    if kind == 'cls' and y.dtype == float:
         y = y.round()
         if len(set(y)) > 100:
             print("grid_cv_a_model: rounded y has more than 100 labels")
@@ -233,7 +237,7 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     if name in ('BAGcls', 'BAGreg') and x.shape[1] < 4:
         param = {'n_estimators': [10, 30, 50, 100, 256, 500]}
 
-    clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring)
+    clf = GridSearchCV(model, param, n_jobs=n_jobs, cv=cv, scoring=scoring, verbose=1)
     clf.fit(x, y)
     sub_end = dtm.now()
 
@@ -385,14 +389,14 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     """
 
     # round real number into int, in order to get f1 score.
-    if train_y.dtype==float:
+    if train_y.dtype == float:
         train_y = train_y.round()
         if len(set(train_y)) > 100:
             print("grid_cv_a_model: rounded y has more than 100 labels")
 
     min_y, max_y = train_y.min(), train_y.max()
 
-    if test_y.dtype==float:
+    if test_y.dtype == float:
         test_y = bounded_round(test_y, min_y, max_y)
 
     model.fit(train_x, train_y)
@@ -416,16 +420,16 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     test_f1_micro = f1_score(test_y, test_pred_round, average='micro')
 
     result = {
-        'train_f1_weighted' : train_f1_weighted,
-        'train_f1_macro': train_f1_macro,
-        'train_f1_micro': train_f1_micro,
-        'train_acc': train_acc,
-        'train_mse': train_mse,
-        'test_f1_weighted'  : test_f1_weighted,
-        'test_f1_macro'  : test_f1_macro,
-        'test_f1_micro': test_f1_micro,
-        'test_acc' : test_acc,
-        'test_mse' : test_mse,
+        'train_f1_weighted': train_f1_weighted,
+        'train_f1_macro'   : train_f1_macro,
+        'train_f1_micro'   : train_f1_micro,
+        'train_acc'        : train_acc,
+        'train_mse'        : train_mse,
+        'test_f1_weighted' : test_f1_weighted,
+        'test_f1_macro'    : test_f1_macro,
+        'test_f1_micro'    : test_f1_micro,
+        'test_acc'         : test_acc,
+        'test_mse'         : test_mse,
     }
     return result
 
@@ -550,8 +554,6 @@ def get_idx_by_true_pred(fitted_model, test_x, test_y, target_tp):
     return target_xs
 
 
-
-
 def ftr_diff_stat_test(fitted_model, test_x, test_y, target_tp, verbose=False):
     """
     group test set by (true, pred) pairs, perform statistical test on each feature to find feature differences
@@ -579,10 +581,10 @@ def ftr_diff_stat_test(fitted_model, test_x, test_y, target_tp, verbose=False):
         anova_stat, anova_p = f_oneway(test)
         kru_stat, kru_p = krutest(test)
         res = {'var_name'   : var,
-             'anova1way_p': anova_p, 'anova1way_stat': anova_stat,
-             'kruskal_p'  : kru_p, 'kruskal_stat': kru_stat,
-             }
-        if len(groups)==2:
+               'anova1way_p': anova_p, 'anova1way_stat': anova_stat,
+               'kruskal_p'  : kru_p, 'kruskal_stat': kru_stat,
+               }
+        if len(groups) == 2:
             res['mean_dff'] = np.abs(np.mean(test[0]) - np.mean(test[1]))
         test_res.append(res)
     df = pd.DataFrame(test_res).set_index("var_name")
