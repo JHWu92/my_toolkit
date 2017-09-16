@@ -55,13 +55,13 @@ def build_network(edge_node_relation, undirect=False):
         return DG
 
 
-def get_segidxs_in_ug(s, e, edge_indices):
+def get_segidxs_in_ug(s, e, edge_index):
     """
     1. There can be multiple edges with the same start and end node. I.e. a direct line and a curve; two one-way edges
     2. When transforming a directed edge into undirected, the s,e could be inverse.
     """
-    segidxs1 = edge_indices[(s, e)]
-    segidxs2 = edge_indices[(e, s)]
+    segidxs1 = edge_index[(s, e)]
+    segidxs2 = edge_index[(e, s)]  # this look up will create empty item in edge_index
     return list(set(segidxs1 + segidxs2))
 
 
