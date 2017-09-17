@@ -1,6 +1,6 @@
 # coding=utf-8
 from plotly import graph_objs as go
-
+# https://community.plot.ly/t/what-colorscales-are-available-in-plotly-and-which-are-the-default/2079/3
 
 def box(arrs, box_names=None, title=None, orientation='v', reverse=False):
     """
