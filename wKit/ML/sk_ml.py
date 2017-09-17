@@ -11,7 +11,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import MinMaxScaler
 
 from wKit.stat.tests import significant_level, krutest, f_oneway
-from ..utility.check_dtype import all_int_able, check_type
+from ..utility.check_dtype import all_int_able, check_type, all_float
 
 try:
     import xgboost
@@ -207,7 +207,7 @@ def grid_cv_a_model(x, y, model, param, kind, name, path='', n_jobs=4, cv=5, ver
     scoring = 'neg_mean_squared_error' if kind == 'reg' else 'f1_weighted'
     path_model_res = os.path.join(path, 'cv_%d_model_%s.csv' % (cv, name))
 
-    if kind == 'cls' and y.dtype == float:
+    if kind == 'cls' and all_float(y):
         y = y.round()
         if len(set(y)) > 100:
             print("grid_cv_a_model: rounded y has more than 100 labels")
@@ -304,7 +304,7 @@ def grid_cv_models(x, y, models, params, order=None, path='', n_jobs=4, cv=5, sa
             if fit_when_load:
                 if verbose: print('fitting model', kind, name)
 
-                if kind == 'cls' and y.dtype == float:
+                if kind == 'cls' and all_float(y):
                     y = y.round()
                     if len(set(y)) > 100:
                         print("grid_cv_a_model: rounded y has more than 100 labels")
@@ -393,14 +393,14 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     """
 
     # round real number into int, in order to get f1 score.
-    if train_y.dtype == float:
+    if all_float(train_y):
         train_y = train_y.round()
         if len(set(train_y)) > 100:
             print("grid_cv_a_model: rounded y has more than 100 labels")
 
     min_y, max_y = train_y.min(), train_y.max()
 
-    if test_y.dtype == float:
+    if all_float(test_y):
         test_y = bounded_round(test_y, min_y, max_y)
 
     model.fit(train_x, train_y)
@@ -482,7 +482,7 @@ def show_important_features(fitted_tree_model, name="", top=None, labels=None, s
         labels = [i for i in range(len(importances))]
     top = min(feature_size, top) if top is not None else feature_size
 
-    imp = pd.DataFrame(zip(importances, labels, std), columns=['importance', 'label', 'std'])
+    imp = pd.DataFrame(list(zip(importances, labels, std)), columns=['importance', 'label', 'std'])
     imp.sort_values('importance', ascending=False, inplace=True)
     imp = imp[:top]
 
@@ -510,9 +510,9 @@ def confusion_matrix_as_df(fitted_model, x, y, labels=None, normalize=False, sho
 
     pred_y = fitted_model.predict(x)
 
-    if pred_y.dtype == float:
+    if all_float(pred_y):
         pred_y = pred_y.round()
-    if y.dtype == float:
+    if all_float(y):
         y = y.round()
     if len(set(y)) > 100:
         print('confusion matrix as df: nunique rounded y > 100')

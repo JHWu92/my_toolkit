@@ -16,6 +16,10 @@ def check_type(a_list, types):
     return all(isinstance(x, types) for x in a_list)
 
 
+def all_float(alist):
+    return check_type(alist, (float, np.floating, complex))
+
+
 def all_int(alist):
     return all(isinstance(x, (int, )) for x in alist)
 
