@@ -482,7 +482,7 @@ def show_important_features(fitted_tree_model, name="", top=None, labels=None, s
         labels = [i for i in range(len(importances))]
     top = min(feature_size, top) if top is not None else feature_size
 
-    imp = pd.DataFrame(list(zip(importances, labels, std)), columns=['importance', 'label', 'std'])
+    imp = pd.DataFrame(list(zip(labels, importances, std)), columns=['label', 'importance', 'std'])
     imp.sort_values('importance', ascending=False, inplace=True)
     imp = imp[:top]
 
