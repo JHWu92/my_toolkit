@@ -5,20 +5,20 @@ from collections import defaultdict
 import snap
 from wKit.utility.time import costs
 
-ud_node_deg_cntr_SgAsNd = 'ud_node_degree_centrality'
-ud_node_node_ecc_SgAsNd = 'ud_node_node_eccentricity'
-ud_node_clo_cntr_SgAsNd = 'ud_node_closeness_centrality'
-ud_node_far_cntr_SgAsNd = 'ud_node_farness_centrality'
-ud_node_eig_cntr_SgAsNd = 'ud_node_eigenvector_centrality'
-ud_node_btw_cntr_SgAsNd = 'ud_node_betweenness_centrality'
-ud_node_page_rank_SgAsNd = 'ud_node_PageRank'
-ud_node_hub_score_SgAsNd = 'ud_node_hub_score'
-ud_node_auth_score_SgAsNd = 'ud_node_authorities_score'
-ud_node_art_pt_SgAsNd = 'ud_node_articulation_points'
-ud_node_bridge_SgAsNd = 'ud_node_node_of_bridge'
+ud_node_deg_cntr = 'ud_node_degree_centrality'
+ud_node_node_ecc = 'ud_node_node_eccentricity'
+ud_node_clo_cntr = 'ud_node_closeness_centrality'
+ud_node_far_cntr = 'ud_node_farness_centrality'
+ud_node_eig_cntr = 'ud_node_eigenvector_centrality'
+ud_node_btw_cntr = 'ud_node_betweenness_centrality'
+ud_node_page_rank = 'ud_node_PageRank'
+ud_node_hub_score = 'ud_node_hub_score'
+ud_node_auth_score = 'ud_node_authorities_score'
+ud_node_art_pt = 'ud_node_articulation_points'
+ud_node_bridge = 'ud_node_node_of_bridge'
 
-ud_edges_btw_cntr_SgAsEg = 'ud_btw_cntr_SgAsEg'
-ud_edges_bridge_SgAsEg = 'ud_bridge_SgAsEg'
+ud_edges_btw_cntr = 'ud_edges_betweenness_centrality'
+ud_edges_bridge = 'ud_edges_bridge'
 
 
 def build_relation_index(edge_node_relation):
@@ -84,11 +84,11 @@ def ftr_undirected_edge(UG, edge_index=None):
     for edge in Edgesbud:
         s, e = edge.GetVal1(), edge.GetVal2()
         if edge_index is None:
-            features[(s, e)][ud_edges_btw_cntr_SgAsEg] += Edgesbud[edge]  # TODO: why do I write += here?
+            features[(s, e)][ud_edges_btw_cntr] += Edgesbud[edge]  # TODO: why do I write += here?
         else:
             segidxs = get_segidxs_in_ug(s, e, edge_index)
             for sidx in segidxs:
-                features[sidx][ud_edges_btw_cntr_SgAsEg] += Edgesbud[edge]
+                features[sidx][ud_edges_btw_cntr] += Edgesbud[edge]
 
     # Returns the edge bridges in Graph in the vector EdgeV.
     # An edge is a bridge if, when removed, increases the number of connected components.
@@ -97,11 +97,11 @@ def ftr_undirected_edge(UG, edge_index=None):
     for edge in EdgeV:
         s, e = edge.GetVal1(), edge.GetVal2()
         if edge_index is None:
-            features[(s, e)][ud_edges_bridge_SgAsEg] += 1  # TODO: why do I write += here?
+            features[(s, e)][ud_edges_bridge] += 1  # TODO: why do I write += here?
         else:
             segidxs = get_segidxs_in_ug(s, e, edge_index)
             for sidx in segidxs:
-                features[sidx][ud_edges_bridge_SgAsEg] += 1
+                features[sidx][ud_edges_bridge] += 1
 
     return features
 
@@ -115,27 +115,27 @@ def ftr_undirected_node(UG):
     features = defaultdict(lambda: defaultdict(float))
 
     start_time = datetime.datetime.now()
-    print('begin ftr_undirected_SgAsNd', costs(start_time))
+    print('begin ftr_undirected', costs(start_time))
 
     for NI in UG.Nodes():
         nid = NI.GetId()
 
         # Returns degree centrality of a given node NId in Graph.
         # Degree centrality of a node is defined as its degree/(N-1), where N is the number of nodes in the network.
-        features[nid][ud_node_deg_cntr_SgAsNd] = snap.GetDegreeCentr(UG, nid)
+        features[nid][ud_node_deg_cntr] = snap.GetDegreeCentr(UG, nid)
 
         # Returns node eccentricity,
         # the largest shortest-path distance from the node NId to any other node in the Graph.
-        features[nid][ud_node_node_ecc_SgAsNd] = snap.GetNodeEcc(UG, nid, False)
+        features[nid][ud_node_node_ecc] = snap.GetNodeEcc(UG, nid, False)
 
         # Returns closeness centrality of a given node NId in Graph.
         # Closeness centrality is equal to 1/farness centrality.
-        features[nid][ud_node_clo_cntr_SgAsNd] = snap.GetClosenessCentr(UG, nid, True, False)
+        features[nid][ud_node_clo_cntr] = snap.GetClosenessCentr(UG, nid, True, False)
 
         # Returns farness centrality of a given node NId in Graph.
         # Farness centrality of a node is the average shortest path length to all other nodes that
         # reside in the same connected component as the given node.
-        features[nid][ud_node_far_cntr_SgAsNd] = snap.GetFarnessCentr(UG, nid, True, False)
+        features[nid][ud_node_far_cntr] = snap.GetFarnessCentr(UG, nid, True, False)
     print('got degree, node, closeness and farness centrality for nodes', costs(start_time))
 
     # Computes eigenvector centrality of all nodes in Graph and stores it in NIdEigenH.
@@ -144,7 +144,7 @@ def ftr_undirected_node(UG):
     NIdEigenH = snap.TIntFltH()
     snap.GetEigenVectorCentr(UG, NIdEigenH)
     for nid in NIdEigenH:
-        features[nid][ud_node_eig_cntr_SgAsNd] = NIdEigenH[nid]
+        features[nid][ud_node_eig_cntr] = NIdEigenH[nid]
     print('got eigen centrality', costs(start_time))
 
     # Computes (approximate) Node and Edge Betweenness Centrality based on a sample of NodeFrac nodes.
@@ -152,14 +152,14 @@ def ftr_undirected_node(UG):
     Edges = snap.TIntPrFltH()
     snap.GetBetweennessCentr(UG, Nodes, Edges, 1.0, False)
     for nid in Nodes:
-        features[nid][ud_node_btw_cntr_SgAsNd] = Nodes[nid]
+        features[nid][ud_node_btw_cntr] = Nodes[nid]
     print('got btw centrality', costs(start_time))
 
     # Computes the PageRank score of every node in Graph. The scores are stored in PRankH.
     PRankH = snap.TIntFltH()
     snap.GetPageRank(UG, PRankH)
     for nid in PRankH:
-        features[nid][ud_node_page_rank_SgAsNd] = PRankH[nid]
+        features[nid][ud_node_page_rank] = PRankH[nid]
     print('got page rank', costs(start_time))
 
     # Computes the Hubs and Authorities score of every node in Graph. The scores are stored in NIdHubH and NIdAuthH.
@@ -167,16 +167,16 @@ def ftr_undirected_node(UG):
     NIdAuthH = snap.TIntFltH()
     snap.GetHits(UG, NIdHubH, NIdAuthH)
     for nid in NIdHubH:
-        features[nid][ud_node_hub_score_SgAsNd] = NIdHubH[nid]
+        features[nid][ud_node_hub_score] = NIdHubH[nid]
     for nid in NIdAuthH:
-        features[nid][ud_node_auth_score_SgAsNd] = NIdAuthH[nid]
+        features[nid][ud_node_auth_score] = NIdAuthH[nid]
     print('got hit score', costs(start_time))
 
     # Returns articulation points of an undirected InGraph.
     ArtNIdV = snap.TIntV()
     snap.GetArtPoints(UG, ArtNIdV)
     for nid in ArtNIdV:
-        features[nid][ud_node_art_pt_SgAsNd] = 1
+        features[nid][ud_node_art_pt] = 1
     print('got articulate point', costs(start_time))
 
     # Returns the edge bridges in Graph in the vector EdgeV.
@@ -184,8 +184,8 @@ def ftr_undirected_node(UG):
     EdgeV = snap.TIntPrV()
     snap.GetEdgeBridges(UG, EdgeV)
     for edge in EdgeV:
-        features[edge.GetVal1()][ud_node_bridge_SgAsNd] += 1
-        features[edge.GetVal2()][ud_node_bridge_SgAsNd] += 1
+        features[edge.GetVal1()][ud_node_bridge] += 1
+        features[edge.GetVal2()][ud_node_bridge] += 1
     print('got bridge', costs(start_time))
 
     return features
