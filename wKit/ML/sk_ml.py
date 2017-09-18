@@ -131,10 +131,13 @@ def grid_cv_default_params():
     # GDBreg's parameters are deliberately cut down.
     params_gdb = {'n_estimators' : [10, 50, 100], 'max_features': ['sqrt', 'log2'],
                   'learning_rate': np.logspace(-4, 1, 3),
-                  'max_depth'    : [3, 10, 50]},
-    params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2]}
-    params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5)}
-    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0]}
+                  'max_depth'    : [3, 10, 50],
+                  'random_state' : [0]}
+    params_rf = {'n_estimators': [10, 100, 500], 'max_features': ['sqrt', 'log2'], 'min_samples_leaf': [1, 2],
+                 'random_state': [0]}
+    params_ada = {'n_estimators': [10, 30, 50, 100, 256, 500], 'learning_rate': np.logspace(-4, 1, 5),
+                  'random_state': [0]}
+    params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0], 'random_state': [0]}
 
     params_mlp = {'hidden_layer_sizes': [(100,), (5, 2), (20, 5), (100, 20), (100, 20, 5)],
                   'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]}
@@ -157,9 +160,10 @@ def grid_cv_default_params():
     params_xgb = {
         'min_child_weight': [1, 5], 'gamma': [0, 0.1],
         'learning_rate'   : [0.01, 0.05, 0.1, 0.3], 'colsample_bytree': [0.7, 1],
-        'subsample': [0.7, 1],
+        'subsample'       : [0.7, 1],
         'silent'          : [1],
-        'nthread'         : [1],  # without it, XGBClassifier will hang, or XGBReg will train really slow. Bad interaction with n_jobs in GridSearchCV
+        'nthread'         : [1],
+    # without it, XGBClassifier will hang, or XGBReg will train really slow. Bad interaction with n_jobs in GridSearchCV
         'n_estimators'    : [500],
     }
     # params_xgb={}
