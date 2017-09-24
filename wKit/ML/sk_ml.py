@@ -164,7 +164,7 @@ def grid_cv_default_params():
         'silent'          : [1],
         'nthread'         : [1],
     # without it, XGBClassifier will hang, or XGBReg will train really slow. Bad interaction with n_jobs in GridSearchCV
-        'n_estimators'    : [500],
+        'n_estimators'    : [500],'random_state': [0]
     }
     # params_xgb={}
     params_reg = {
