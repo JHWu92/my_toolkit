@@ -140,16 +140,16 @@ def grid_cv_default_params():
     params_bag = {'n_estimators': [10, 30, 50, 100, 256, 500], 'max_features': [0.4, 0.7, 1.0], 'random_state': [0]}
 
     params_mlp = {'hidden_layer_sizes': [(100,), (5, 2), (20, 5), (100, 20), (100, 20, 5)],
-                  'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000]}
+                  'learning_rate'     : ['constant', 'adaptive'], 'max_iter': [10000],'random_state': [0]}
 
     # SVM/SVR is way too slow
     c_s = np.logspace(-4, 2, 3)
     gamma_s = [1e-5, 1e-3, 1e-1]
 
     params_svm = [
-        {'kernel': ['rbf'], 'C': c_s, 'gamma': gamma_s},
-        {'kernel': ['sigmoid'], 'C': c_s, 'gamma': gamma_s},
-        {'kernel': ['poly'], 'C': c_s, 'gamma': gamma_s, 'degree': [3]},
+        {'kernel': ['rbf'], 'C': c_s, 'gamma': gamma_s,'random_state': [0]},
+        {'kernel': ['sigmoid'], 'C': c_s, 'gamma': gamma_s,'random_state': [0]},
+        {'kernel': ['poly'], 'C': c_s, 'gamma': gamma_s, 'degree': [3],'random_state': [0]},
     ]
 
     params_svr = [
@@ -170,16 +170,16 @@ def grid_cv_default_params():
     params_reg = {
         # regression
         'ols'      : {},
-        'ridge'    : {'alpha': np.logspace(0, 2, 10)},
-        'lasso'    : {'alpha': np.logspace(0, 2, 10)},
-        'DTreg'    : {'max_depth': [3, 5, 10, 30, 50], 'max_features': [0.1, 0.3, 0.5, 1.]},
+        'ridge'    : {'alpha': np.logspace(0, 2, 10),'random_state': [0]},
+        'lasso'    : {'alpha': np.logspace(0, 2, 10),'random_state': [0]},
+        'DTreg'    : {'max_depth': [3, 5, 10, 30, 50], 'max_features': [0.1, 0.3, 0.5, 1.],'random_state': [0]},
         'RFreg'    : params_rf,
         'ADAreg'   : params_ada,
         'BAGreg'   : params_bag,
         'GDBreg'   : params_gdb,
         'MLPreg'   : params_mlp,
         'SVR'      : params_svr,
-        'linearSVR': {'C': c_s, 'loss': ['epsilon_insensitive', 'squared_epsilon_insensitive'], 'epsilon': [0, 0.1, 1]},
+        'linearSVR': {'C': c_s, 'loss': ['epsilon_insensitive', 'squared_epsilon_insensitive'], 'epsilon': [0, 0.1, 1],'random_state': [0]},
         'XGBreg'   : params_xgb,
     }
 
@@ -187,14 +187,14 @@ def grid_cv_default_params():
         'GNBcls'   : {},
         'logistics': {'C': np.logspace(-4, 2, 4), 'penalty': ['l1', 'l2']},
         'DTcls'    : {'max_depth': [3, 5, 10, 30, 50], 'max_features': [0.1, 0.3, 0.5, 1.],
-                      'criterion': ['gini', 'entropy']},
+                      'criterion': ['gini', 'entropy'],'random_state': [0]},
         'RFcls'    : params_rf,
         'ADAcls'   : params_ada,
         'BAGcls'   : params_bag,
         'GDBcls'   : params_gdb,
         'SVM'      : params_svm,
         'MLPcls'   : params_mlp,
-        'linearSVM': {'C': c_s, 'loss': ['hinge', 'squared_hinge']},
+        'linearSVM': {'C': c_s, 'loss': ['hinge', 'squared_hinge'],'random_state': [0]},
         'XGBcls'   : params_xgb,
     }
 
@@ -373,6 +373,9 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
     Return
         evaluation result as pd.DF, columns are defined by evaluator
     """
+
+    # TODO: fit the best params again, the f1 score is different than this output
+
     print('evaluating grid cv')
     results = {}
     for (kind, name), model in df_cv.best_model.iteritems():
@@ -393,7 +396,8 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
     Evaluator for scalable classification. E.g. Ys are 1, 2, 3, 4
     Both regression and classification will be used.
     prediction by regression will be round up (bounded by max and min of Ys) as a class label
-    :return: metrics: mse, accuracy and weighted f1, for both train and test
+    Model will be refit to train_x and train_y.
+    :return: metrics: mse, accuracy and f1, for both train and test
     """
 
     # round real number into int, in order to get f1 score.
