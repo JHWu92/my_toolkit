@@ -361,7 +361,7 @@ def grid_cv_models(x, y, models, params, order=None, path='', n_jobs=4, cv=5, sa
 # Visualization cross validation result
 # ################################################
 
-def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path='', cv=5, save_res=True):
+def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path='', cv=5, save_res=True, range=None):
     """
     This function is major for evaluate result from grid_cv_models. But it can be also used to evaluate df containing
     different models. In this case, set save_res=False.
@@ -370,6 +370,7 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
         df_cv: results from :func:: grid_cv_models(). index=(kind, name), 'best_model' is in columns.
         evaluator: such as :func:: evaluator_scalable_cls()
         save_res: True->save to path/cv_%d_best_models_evaluation.csv % cv
+        range: the min and max label for bounded round
     Return
         evaluation result as pd.DF, columns are defined by evaluator
     """
@@ -379,7 +380,7 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
     print('evaluating grid cv')
     results = {}
     for (kind, name), model in df_cv.best_model.iteritems():
-        results[kind, name] = evaluator(model, train_x, train_y, test_x, test_y)
+        results[kind, name] = evaluator(model, train_x, train_y, test_x, test_y, range)
 
     df_results = pd.DataFrame(results).T
     if 'test_f1_weighted' in df_results.columns:
@@ -391,12 +392,13 @@ def evaluate_grid_cv(df_cv, train_x, train_y, test_x, test_y, evaluator, path=''
     return df_results
 
 
-def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
+def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y, range=None):
     """
     Evaluator for scalable classification. E.g. Ys are 1, 2, 3, 4
     Both regression and classification will be used.
     prediction by regression will be round up (bounded by max and min of Ys) as a class label
     Model will be refit to train_x and train_y.
+    range: the min and max label for bounded round
     :return: metrics: mse, accuracy and f1, for both train and test
     """
 
@@ -406,7 +408,10 @@ def evaluator_scalable_cls(model, train_x, train_y, test_x, test_y):
         if len(set(train_y)) > 100:
             print("grid_cv_a_model: rounded y has more than 100 labels")
 
-    min_y, max_y = train_y.min(), train_y.max()
+    if range is None:
+        min_y, max_y = train_y.min(), train_y.max()
+    else:
+        min_y, max_y = range
 
     if all_float(test_y):
         test_y = bounded_round(test_y, min_y, max_y)
