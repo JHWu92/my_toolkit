@@ -1,12 +1,12 @@
 # coding=utf-8
 import folium
-from folium.plugins import MarkerCluster
+from folium.plugins import MarkerCluster, FastMarkerCluster
 
 
 def add_common_tiles(m):
-    folium.TileLayer('Stamen Terrain').add_to(m)
-    folium.TileLayer('Stamen Toner').add_to(m)
-    folium.TileLayer('Stamen Watercolor').add_to(m)
+    # folium.TileLayer('Stamen Terrain').add_to(m)
+    # folium.TileLayer('Stamen Toner').add_to(m)
+    # folium.TileLayer('Stamen Watercolor').add_to(m)
     folium.TileLayer('CartoDB dark_matter').add_to(m)
     folium.TileLayer('CartoDB positron').add_to(m)  # the last one is the default tiles
 
@@ -69,6 +69,42 @@ def marker_cluster(named_data, lonlat=True, filename='tmp_marker_cluster.html', 
     return m
 
 
+def marker_cluster_fast(named_data, lonlat=True,filename='tmp_marker_cluster.html', verbose=0):
+    if lonlat:
+        if verbose > 0: print('transformed to (lat,lon)')
+        named_data = {name: [(c[1], c[0]) for c in coords] for name, coords in named_data.items()}
+
+    # get bounding box
+    lons, lats = [], []
+    for _, coords in named_data.items():
+        lats.extend([coord[0] for coord in coords])
+        lons.extend([coord[1] for coord in coords])
+    w, e, s, n = min(lons), max(lons), min(lats), max(lats)
+
+    # build map
+    m = folium.Map()
+    add_common_tiles(m)
+    m.fit_bounds([(s, w), (n, e)])
+    # bind data to map
+    callback = """
+    function (row) {{
+        var icon, marker;
+        icon = L.AwesomeMarkers.icon({{
+            icon: "map-marker", markerColor: "{color}"}});
+        marker = L.marker(new L.LatLng(row[0], row[1]));
+        marker.setIcon(icon);
+        return marker;
+    }};
+    """
+    colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
+    for i, (name, coords) in enumerate(named_data.items()):
+        if verbose > 0: print('adding layer of', name)
+        FastMarkerCluster(data=coords, callback=callback.format(color=colors[i % len(colors)])).add_to(m)
+    # layer control
+    m.add_child(folium.LayerControl())
+    m.save(filename)
+
+
 def main():
     import geopandas as gp
     from shapely.geometry import Point
@@ -83,7 +119,8 @@ def main():
 
     named_coords = {'obj a': gpdfs[0].geometry.apply(lambda x: x.coords[0]).tolist()}
 
-    marker_cluster(named_coords, True, verbose=1)
+    # marker_cluster(named_coords, True, verbose=1)
+    marker_cluster_fast(named_coords, True, verbose=1)
     return
 
 
