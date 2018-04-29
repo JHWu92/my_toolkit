@@ -60,7 +60,8 @@ def marker_cluster(named_data, lonlat=True, filename='tmp_marker_cluster.html', 
         f = folium.FeatureGroup(name=name)
         if verbose > 0: print('adding layer of', name)
         # TODO: add custom popups
-        f.add_child(MarkerCluster(locations=coords, popups=['%s%d' % (name, i) for i in range(len(coords))]))
+        popups = ['group: {}<br>lon:{}<br>lat:{}'.format(name, lon, lat) for (lat, lon) in coords]
+        f.add_child(MarkerCluster(locations=coords, popups=popups))
         m.add_child(f)
     # layer control
     m.add_child(folium.LayerControl())
