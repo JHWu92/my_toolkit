@@ -1,6 +1,7 @@
 # coding=utf-8
 import folium
 from folium.plugins import MarkerCluster, FastMarkerCluster
+from wKit.vis.my_marker_cluster import MyFastMarkerCluster
 
 
 def add_common_tiles(m):
@@ -57,19 +58,20 @@ def marker_cluster(named_data, lonlat=True, filename='tmp_marker_cluster.html', 
     m.fit_bounds([(s, w), (n, e)])
     # bind data to map
     for name, coords in named_data.items():
-        f = folium.FeatureGroup(name=name)
+        # f = folium.FeatureGroup(name=name)
         if verbose > 0: print('adding layer of', name)
         # TODO: add custom popups
         popups = ['group: {}<br>lon:{}<br>lat:{}'.format(name, lon, lat) for (lat, lon) in coords]
-        f.add_child(MarkerCluster(locations=coords, popups=popups))
-        m.add_child(f)
+        # f.add_child(MarkerCluster(locations=coords, popups=popups))
+        # m.add_child(f)
+        MarkerCluster(name=name, locations=coords, popups=popups).add_to(m)
     # layer control
-    m.add_child(folium.LayerControl())
+    folium.LayerControl().add_to(m)
     m.save(filename)
     return m
 
 
-def marker_cluster_fast(named_data, lonlat=True,filename='tmp_marker_cluster.html', verbose=0):
+def marker_cluster_fast(named_data, lonlat=True,filename='tmp_marker_cluster_fast.html', verbose=0):
     if lonlat:
         if verbose > 0: print('transformed to (lat,lon)')
         named_data = {name: [(c[1], c[0]) for c in coords] for name, coords in named_data.items()}
@@ -87,21 +89,22 @@ def marker_cluster_fast(named_data, lonlat=True,filename='tmp_marker_cluster.htm
     m.fit_bounds([(s, w), (n, e)])
     # bind data to map
     callback = """
-    function (row) {{
+    function (row) {
         var icon, marker;
-        icon = L.AwesomeMarkers.icon({{
-            icon: "map-marker", markerColor: "{color}"}});
+        icon = L.AwesomeMarkers.icon({
+            icon: "map-marker", markerColor: "COLOR_HOLDER"});
         marker = L.marker(new L.LatLng(row[0], row[1]));
         marker.setIcon(icon);
         return marker;
-    }};
+    };
     """
     colors = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
     for i, (name, coords) in enumerate(named_data.items()):
         if verbose > 0: print('adding layer of', name)
-        FastMarkerCluster(data=coords, callback=callback.format(color=colors[i % len(colors)])).add_to(m)
+        MyFastMarkerCluster(name=name, data=coords, callback=callback.replace('COLOR_HOLDER', colors[i % len(colors)])).add_to(m)
+
     # layer control
-    m.add_child(folium.LayerControl())
+    folium.LayerControl().add_to(m)
     m.save(filename)
 
 
@@ -117,9 +120,12 @@ def main():
     for gpdf in gpdfs:
         gpdf.crs = {'init': 'epsg:4326', 'no_defs': True}
 
-    named_coords = {'obj a': gpdfs[0].geometry.apply(lambda x: x.coords[0]).tolist()}
+    named_coords = {
+        'obj a': gpdfs[0].geometry.apply(lambda x: x.coords[0]).tolist(),
+        'obj b': gpdfs[1].geometry.apply(lambda x: x.coords[0]).tolist(),
+    }
 
-    # marker_cluster(named_coords, True, verbose=1)
+    marker_cluster(named_coords, True, verbose=1)
     marker_cluster_fast(named_coords, True, verbose=1)
     return
 
